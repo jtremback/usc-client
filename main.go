@@ -10,6 +10,7 @@ import (
 
 	"database/sql"
 
+	"github.com/boltdb/bolt"
 	"github.com/jinzhu/gorm"
 	core "github.com/jtremback/upc-core/wallet"
 	_ "github.com/mattn/go-sqlite3"
@@ -29,13 +30,13 @@ func main() {
 	}
 }
 
-func addAccountsTable(db *sql.DB) {
-	tx, err := db.Begin()
+func (a *api) createTables() {
+	tx, err := a.db.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tx.Exec(`CREATE TABLE IF NOT EXISTS my_accounts (
+	_, err = tx.Exec(`CREATE TABLE IF NOT EXISTS accounts (
 	  name    				TEXT PRIMARY KEY,
 	  pubkey  				BLOB,
 	  privkey 				BLOB,
@@ -43,13 +44,13 @@ func addAccountsTable(db *sql.DB) {
 	  escrow_provider TEXT
 	);`)
 
-	tx.Exec(`CREATE TABLE IF NOT EXISTS escrow_providers (
+	_, err = tx.Exec(`CREATE TABLE IF NOT EXISTS escrow_providers (
 	  name 		TEXT PRIMARY KEY,
 	  pubkey 	BLOB,
 	  address TEXT
 	);`)
 
-	tx.Exec(`CREATE TABLE IF NOT EXISTS channels (
+	_, err = tx.Exec(`CREATE TABLE channels (
 		ChannelId 							 TEXT PRIMARY KEY
 		Phase
 
@@ -68,6 +69,99 @@ func addAccountsTable(db *sql.DB) {
 		Me           						 INT
 		Fulfillments 						 TEXT
 	);`)
+
+	tx.Commit()
+}
+
+func (a *api) getChannels(w http.ResponseWriter, r *http.Request) {
+	rows, err := a.db.Query(`SELECT
+		ChannelId,
+		Phase,
+
+		OpeningTx,
+		OpeningTxEnvelope,
+
+		LastUpdateTx,
+		LastUpdateTxEnvelope,
+
+		LastFullUpdateTx,
+		LastFullUpdateTxEnvelope,
+
+		EscrowProvider,
+		Accounts,
+
+		Me,
+		Fulfillments
+	FROM channels`)
+
+	if err != nil {
+		a.fail(w, err.Error(), 500)
+		return
+	}
+	defer rows.Close()
+
+	var channels []*core.Channel
+	for rows.Next() {
+		ch := core.Channel{}
+		var accounts []byte
+		var fulfillments []byte
+		var openingTx []byte
+		var openingTxEnvelope []byte
+		var lastUpdateTx []byte
+		var lastUpdateTxEnvelope []byte
+		var lastFullUpdateTx []byte
+		var lastFullUpdateTxEnvelope []byte
+		var escrowProvider []byte
+		err := rows.Scan(
+			&ch.ChannelId,
+			&ch.Phase,
+			&openingTx,
+			&openingTxEnvelope,
+			&lastUpdateTx,
+			&lastUpdateTxEnvelope,
+			&lastFullUpdateTx,
+			&lastFullUpdateTxEnvelope,
+			&escrowProvider,
+			&accounts,
+			&ch.Me,
+			&fulfillments,
+		)
+		if err != nil {
+			a.fail(w, err.Error(), 500)
+			return
+		}
+
+		var accts []string
+		json.Unmarshal(accounts, accts)
+
+		rows, err := a.db.Query(`SELECT * FROM accounts WHERE name IN ($1,$2)
+														 INNER JOIN escrow_providers
+														 ON accounts.EscrowProvider = escrow_providers.name`, accts[0], accts[1])
+		if err != nil {
+			a.fail(w, err.Error(), 500)
+			return
+		}
+		for rows.Next() {
+			acct := core.Account{}
+			err := rows.Scan(acct.Name, acct.Pubkey, acct.Privkey, acct.Address)
+			if err != nil {
+				a.fail(w, err.Error(), 500)
+				return
+			}
+		}
+
+		channels = append(channels, &ch)
+	}
+	if rows.Err() != nil {
+		a.fail(w, rows.Err().Error(), 500)
+		return
+	}
+
+	data := struct {
+		channels []*core.Channel
+	}{channels}
+
+	a.ok(w, data)
 }
 
 func testTicker(t time.Time) {
@@ -146,59 +240,59 @@ func viewEscrowProviders(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
 }
 
-func addEscrowProvider(w http.ResponseWriter, r *http.Request) {
-	if r.Body == nil {
-		fmt.Println("no body")
-		return
-	}
+// func addEscrowProvider(w http.ResponseWriter, r *http.Request) {
+// 	if r.Body == nil {
+// 		fmt.Println("no body")
+// 		return
+// 	}
 
-	var ep core.EscrowProvider
-	err := json.NewDecoder(r.Body).Decode(&ep)
-	if err != nil {
-		panic(err)
-	}
+// 	var ep core.EscrowProvider
+// 	err := json.NewDecoder(r.Body).Decode(&ep)
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	db, err := gorm.Open("sqlite3", "/tmp/gorm.db")
-	if err != nil {
-		panic(err)
-	}
+// 	db, err := gorm.Open("sqlite3", "/tmp/gorm.db")
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	db.NewRecord(ep)
-	db.Create(&ep)
+// 	db.NewRecord(ep)
+// 	db.Create(&ep)
 
-	json.NewEncoder(w).Encode(ep)
-}
+// 	json.NewEncoder(w).Encode(ep)
+// }
 
 func viewPeers(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
 }
 
-func addPeer(w http.ResponseWriter, r *http.Request) {
-	// if r.Body == nil {
-	// 	fmt.Println("no body")
-	// 	return
-	// }
-	// dec := json.NewDecoder(r.Body)
+func addEscrowProvider(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil {
+		fmt.Println("no body")
+		return
+	}
+	dec := json.NewDecoder(r.Body)
 
-	// var ep core.EscrowProvider
-	// if err := dec.Decode(&ep); err != nil {
-	// 	panic(err)
-	// }
+	var ep core.EscrowProvider
+	if err := dec.Decode(&ep); err != nil {
+		panic(err)
+	}
 
-	// bytes, err := json.Marshal(ep)
+	bytes, err := json.Marshal(ep)
 
-	// db, err := bolt.Open(".", 0600, nil)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
+	db, err := bolt.Open(".", 0600, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	// db.Update(func(tx *bolt.Tx) error {
-	// 	indexes := tx.Bucket([]byte("Indexes"))
-	// 	escrowProviders := tx.Bucket([]byte("EscrowProviders"))
-	// 	err := escrowProviders.Put([]byte(ep.Name), bytes)
-	// 	err = indexes.Put(makeKey("EscrowProviders", "Pubkey", string(ep.Pubkey)), ep.Name)
-	// 	return err
-	// })
+	db.Update(func(tx *bolt.Tx) error {
+		indexes := tx.Bucket([]byte("Indexes"))
+		escrowProviders := tx.Bucket([]byte("EscrowProviders"))
+		err := escrowProviders.Put([]byte(ep.Name), bytes)
+		err = indexes.Put(makeKey("EscrowProviders", "Pubkey", string(ep.Pubkey)), []byte(ep.Name))
+		return err
+	})
 }
 
 func makeKey(s ...string) []byte {
