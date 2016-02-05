@@ -12,6 +12,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/jinzhu/gorm"
+
 	core "github.com/jtremback/upc-core/wallet"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -130,6 +131,9 @@ func (a *api) getChannels(w http.ResponseWriter, r *http.Request) {
 			a.fail(w, err.Error(), 500)
 			return
 		}
+
+		err = json.Unmarshal(openingTx, ch.OpeningTx)
+		err = json.Unmarshal(openingTx, ch.OpeningTx)
 
 		var accts []string
 		json.Unmarshal(accounts, accts)
@@ -292,6 +296,34 @@ func addEscrowProvider(w http.ResponseWriter, r *http.Request) {
 		err := escrowProviders.Put([]byte(ep.Name), bytes)
 		err = indexes.Put(makeKey("EscrowProviders", "Pubkey", string(ep.Pubkey)), []byte(ep.Name))
 		return err
+	})
+}
+
+func getKVChannel(db *bolt.DB) {
+	err := db.View(func(tx *bolt.Tx) error {
+		indexes, channels := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("Channels"))
+		data := channels.Get("foo")
+
+		var ch *core.Channel
+		json.Unmarshal(data, ch)
+
+		// indexes, escrowProviders := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("EscrowProviders"))
+		// ep := escrowProviders.Get(indexes.Get(makeKey("EscrowProviders", "Pubkey", "foo")))
+		// return nil
+	})
+}
+
+func setKVChannel(db *bolt.DB) {
+	err := db.View(func(tx *bolt.Tx) error {
+		indexes, channels := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("Channels"))
+		data := channels.Get("foo")
+
+		var ch *core.Channel
+		json.Unmarshal(data, ch)
+
+		// indexes, escrowProviders := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("EscrowProviders"))
+		// ep := escrowProviders.Get(indexes.Get(makeKey("EscrowProviders", "Pubkey", "foo")))
+		// return nil
 	})
 }
 
