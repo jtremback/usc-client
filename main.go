@@ -3,22 +3,32 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"database/sql"
 
 	"github.com/boltdb/bolt"
 	"github.com/jinzhu/gorm"
+	"github.com/tv42/compound"
 
 	core "github.com/jtremback/upc-core/wallet"
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// const (
+// 	separator []byte = []byte{0, 0}
+// )
+
 type api struct {
 	db *sql.DB
+}
+
+// compound index types
+type ssb struct {
+	b string
+	c string
+	d []byte
 }
 
 func main() {
@@ -29,49 +39,6 @@ func main() {
 	for t := range ticker.C {
 		testTicker(t)
 	}
-}
-
-func (a *api) createTables() {
-	tx, err := a.db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = tx.Exec(`CREATE TABLE IF NOT EXISTS accounts (
-	  name    				TEXT PRIMARY KEY,
-	  pubkey  				BLOB,
-	  privkey 				BLOB,
-	  address 				TEXT,
-	  escrow_provider TEXT
-	);`)
-
-	_, err = tx.Exec(`CREATE TABLE IF NOT EXISTS escrow_providers (
-	  name 		TEXT PRIMARY KEY,
-	  pubkey 	BLOB,
-	  address TEXT
-	);`)
-
-	_, err = tx.Exec(`CREATE TABLE channels (
-		ChannelId 							 TEXT PRIMARY KEY
-		Phase
-
-		OpeningTx         			 BLOB
-		OpeningTxEnvelope 			 BLOB
-
-		LastUpdateTx         		 BLOB
-		LastUpdateTxEnvelope 		 BLOB
-
-		LastFullUpdateTx         BLOB
-		LastFullUpdateTxEnvelope BLOB
-
-		EscrowProvider 					 TEXT
-		Accounts 								 TEXT
-
-		Me           						 INT
-		Fulfillments 						 TEXT
-	);`)
-
-	tx.Commit()
 }
 
 func (a *api) getChannels(w http.ResponseWriter, r *http.Request) {
@@ -299,36 +266,47 @@ func addEscrowProvider(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func getKVChannel(db *bolt.DB) {
-	err := db.View(func(tx *bolt.Tx) error {
+// func getKVChannel(db *bolt.DB) {
+// 	err := db.View(func(tx *bolt.Tx) error {
+// 		indexes, channels := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("Channels"))
+// 		data := channels.Get("foo")
+
+// 		var ch *core.Channel
+// 		json.Unmarshal(data, ch)
+
+// 		// indexes, escrowProviders := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("EscrowProviders"))
+// 		// ep := escrowProviders.Get(indexes.Get(makeKey("EscrowProviders", "Pubkey", "foo")))
+// 		// return nil
+// 	})
+// }
+
+func setKVChannel(db *bolt.DB, ch *core.Channel) error {
+	err := db.Update(func(tx *bolt.Tx) error {
 		indexes, channels := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("Channels"))
-		data := channels.Get("foo")
 
-		var ch *core.Channel
-		json.Unmarshal(data, ch)
+		b, err := json.Marshal(ch)
+		if err != nil {
+			return err
+		}
 
-		// indexes, escrowProviders := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("EscrowProviders"))
-		// ep := escrowProviders.Get(indexes.Get(makeKey("EscrowProviders", "Pubkey", "foo")))
-		// return nil
+		primary := []byte(ch.ChannelId)
+
+		err = channels.Put(primary, b)
+		if err != nil {
+			return err
+		}
+
+		err = indexes.Put(compound.Key(ssb{
+			"EscrowProvider",
+			"Pubkey",
+			ch.Pubkey}), primary)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	})
-}
-
-func setKVChannel(db *bolt.DB) {
-	err := db.View(func(tx *bolt.Tx) error {
-		indexes, channels := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("Channels"))
-		data := channels.Get("foo")
-
-		var ch *core.Channel
-		json.Unmarshal(data, ch)
-
-		// indexes, escrowProviders := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("EscrowProviders"))
-		// ep := escrowProviders.Get(indexes.Get(makeKey("EscrowProviders", "Pubkey", "foo")))
-		// return nil
-	})
-}
-
-func makeKey(s ...string) []byte {
-	return []byte(strings.Join(append(s), "/"))
+	return err
 }
 
 func (a *api) fail(w http.ResponseWriter, msg string, status int) {
