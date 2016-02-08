@@ -15,13 +15,6 @@ type api struct {
 	db *bolt.DB
 }
 
-// compound index types
-type ssb struct {
-	b string
-	c string
-	d []byte
-}
-
 func main() {
 	go http.ListenAndServe(":8120", nil)
 
