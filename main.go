@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"database/sql"
-
 	"github.com/boltdb/bolt"
 	"github.com/jinzhu/gorm"
 	"github.com/tv42/compound"
@@ -16,12 +14,13 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// const (
-// 	separator []byte = []byte{0, 0}
-// )
+const (
+	escrowProviders int = 1
+	channels
+)
 
 type api struct {
-	db *sql.DB
+	db *bolt.DB
 }
 
 // compound index types
@@ -41,99 +40,99 @@ func main() {
 	}
 }
 
-func (a *api) getChannels(w http.ResponseWriter, r *http.Request) {
-	rows, err := a.db.Query(`SELECT
-		ChannelId,
-		Phase,
+// func (a *api) getChannels(w http.ResponseWriter, r *http.Request) {
+// 	rows, err := a.db.Query(`SELECT
+// 		ChannelId,
+// 		Phase,
 
-		OpeningTx,
-		OpeningTxEnvelope,
+// 		OpeningTx,
+// 		OpeningTxEnvelope,
 
-		LastUpdateTx,
-		LastUpdateTxEnvelope,
+// 		LastUpdateTx,
+// 		LastUpdateTxEnvelope,
 
-		LastFullUpdateTx,
-		LastFullUpdateTxEnvelope,
+// 		LastFullUpdateTx,
+// 		LastFullUpdateTxEnvelope,
 
-		EscrowProvider,
-		Accounts,
+// 		EscrowProvider,
+// 		Accounts,
 
-		Me,
-		Fulfillments
-	FROM channels`)
+// 		Me,
+// 		Fulfillments
+// 	FROM channels`)
 
-	if err != nil {
-		a.fail(w, err.Error(), 500)
-		return
-	}
-	defer rows.Close()
+// 	if err != nil {
+// 		a.fail(w, err.Error(), 500)
+// 		return
+// 	}
+// 	defer rows.Close()
 
-	var channels []*core.Channel
-	for rows.Next() {
-		ch := core.Channel{}
-		var accounts []byte
-		var fulfillments []byte
-		var openingTx []byte
-		var openingTxEnvelope []byte
-		var lastUpdateTx []byte
-		var lastUpdateTxEnvelope []byte
-		var lastFullUpdateTx []byte
-		var lastFullUpdateTxEnvelope []byte
-		var escrowProvider []byte
-		err := rows.Scan(
-			&ch.ChannelId,
-			&ch.Phase,
-			&openingTx,
-			&openingTxEnvelope,
-			&lastUpdateTx,
-			&lastUpdateTxEnvelope,
-			&lastFullUpdateTx,
-			&lastFullUpdateTxEnvelope,
-			&escrowProvider,
-			&accounts,
-			&ch.Me,
-			&fulfillments,
-		)
-		if err != nil {
-			a.fail(w, err.Error(), 500)
-			return
-		}
+// 	var channels []*core.Channel
+// 	for rows.Next() {
+// 		ch := core.Channel{}
+// 		var accounts []byte
+// 		var fulfillments []byte
+// 		var openingTx []byte
+// 		var openingTxEnvelope []byte
+// 		var lastUpdateTx []byte
+// 		var lastUpdateTxEnvelope []byte
+// 		var lastFullUpdateTx []byte
+// 		var lastFullUpdateTxEnvelope []byte
+// 		var escrowProvider []byte
+// 		err := rows.Scan(
+// 			&ch.ChannelId,
+// 			&ch.Phase,
+// 			&openingTx,
+// 			&openingTxEnvelope,
+// 			&lastUpdateTx,
+// 			&lastUpdateTxEnvelope,
+// 			&lastFullUpdateTx,
+// 			&lastFullUpdateTxEnvelope,
+// 			&escrowProvider,
+// 			&accounts,
+// 			&ch.Me,
+// 			&fulfillments,
+// 		)
+// 		if err != nil {
+// 			a.fail(w, err.Error(), 500)
+// 			return
+// 		}
 
-		err = json.Unmarshal(openingTx, ch.OpeningTx)
-		err = json.Unmarshal(openingTx, ch.OpeningTx)
+// 		err = json.Unmarshal(openingTx, ch.OpeningTx)
+// 		err = json.Unmarshal(openingTx, ch.OpeningTx)
 
-		var accts []string
-		json.Unmarshal(accounts, accts)
+// 		var accts []string
+// 		json.Unmarshal(accounts, accts)
 
-		rows, err := a.db.Query(`SELECT * FROM accounts WHERE name IN ($1,$2)
-														 INNER JOIN escrow_providers
-														 ON accounts.EscrowProvider = escrow_providers.name`, accts[0], accts[1])
-		if err != nil {
-			a.fail(w, err.Error(), 500)
-			return
-		}
-		for rows.Next() {
-			acct := core.Account{}
-			err := rows.Scan(acct.Name, acct.Pubkey, acct.Privkey, acct.Address)
-			if err != nil {
-				a.fail(w, err.Error(), 500)
-				return
-			}
-		}
+// 		rows, err := a.db.Query(`SELECT * FROM accounts WHERE name IN ($1,$2)
+// 														 INNER JOIN escrow_providers
+// 														 ON accounts.EscrowProvider = escrow_providers.name`, accts[0], accts[1])
+// 		if err != nil {
+// 			a.fail(w, err.Error(), 500)
+// 			return
+// 		}
+// 		for rows.Next() {
+// 			acct := core.Account{}
+// 			err := rows.Scan(acct.Name, acct.Pubkey, acct.Privkey, acct.Address)
+// 			if err != nil {
+// 				a.fail(w, err.Error(), 500)
+// 				return
+// 			}
+// 		}
 
-		channels = append(channels, &ch)
-	}
-	if rows.Err() != nil {
-		a.fail(w, rows.Err().Error(), 500)
-		return
-	}
+// 		channels = append(channels, &ch)
+// 	}
+// 	if rows.Err() != nil {
+// 		a.fail(w, rows.Err().Error(), 500)
+// 		return
+// 	}
 
-	data := struct {
-		channels []*core.Channel
-	}{channels}
+// 	data := struct {
+// 		channels []*core.Channel
+// 	}{channels}
 
-	a.ok(w, data)
-}
+// 	a.ok(w, data)
+// }
 
 func testTicker(t time.Time) {
 	fmt.Println("Tick at", t)
@@ -238,75 +237,118 @@ func viewPeers(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
 }
 
-func addEscrowProvider(w http.ResponseWriter, r *http.Request) {
-	if r.Body == nil {
-		fmt.Println("no body")
-		return
-	}
-	dec := json.NewDecoder(r.Body)
+// func addEscrowProvider(w http.ResponseWriter, r *http.Request) {
+// 	if r.Body == nil {
+// 		fmt.Println("no body")
+// 		return
+// 	}
+// 	dec := json.NewDecoder(r.Body)
 
-	var ep core.EscrowProvider
-	if err := dec.Decode(&ep); err != nil {
-		panic(err)
-	}
+// 	var ep core.EscrowProvider
+// 	if err := dec.Decode(&ep); err != nil {
+// 		panic(err)
+// 	}
 
-	bytes, err := json.Marshal(ep)
+// 	bytes, err := json.Marshal(ep)
 
-	db, err := bolt.Open(".", 0600, nil)
-	if err != nil {
-		fmt.Println(err)
-	}
+// 	db, err := bolt.Open(".", 0600, nil)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
 
-	db.Update(func(tx *bolt.Tx) error {
-		indexes := tx.Bucket([]byte("Indexes"))
-		escrowProviders := tx.Bucket([]byte("EscrowProviders"))
-		err := escrowProviders.Put([]byte(ep.Name), bytes)
-		err = indexes.Put(makeKey("EscrowProviders", "Pubkey", string(ep.Pubkey)), []byte(ep.Name))
-		return err
-	})
-}
-
-// func getKVChannel(db *bolt.DB) {
-// 	err := db.View(func(tx *bolt.Tx) error {
-// 		indexes, channels := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("Channels"))
-// 		data := channels.Get("foo")
-
-// 		var ch *core.Channel
-// 		json.Unmarshal(data, ch)
-
-// 		// indexes, escrowProviders := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("EscrowProviders"))
-// 		// ep := escrowProviders.Get(indexes.Get(makeKey("EscrowProviders", "Pubkey", "foo")))
-// 		// return nil
+// 	db.Update(func(tx *bolt.Tx) error {
+// 		indexes := tx.Bucket([]byte("Indexes"))
+// 		escrowProviders := tx.Bucket([]byte("EscrowProviders"))
+// 		err := escrowProviders.Put([]byte(ep.Name), bytes)
+// 		err = indexes.Put(makeKey("EscrowProviders", "Pubkey", string(ep.Pubkey)), []byte(ep.Name))
+// 		return err
 // 	})
 // }
 
-func setKVChannel(db *bolt.DB, ch *core.Channel) error {
+func populateChannel(db *bolt.DB, ch *core.Channel, ChannelID string) error {
+	err := db.View(func(tx *bolt.Tx) error {
+		var ma *core.MyAccount
+		err := json.Unmarshal(tx.Bucket([]byte("MyAccounts")).Get([]byte(ch.MyAccount.Pubkey)), ma)
+		if err != nil {
+			return err
+		}
+
+		var ta *core.TheirAccount
+		err = json.Unmarshal(tx.Bucket([]byte("TheirAccounts")).Get([]byte(ch.TheirAccount.Pubkey)), ta)
+		if err != nil {
+			return err
+		}
+
+		var ep *core.EscrowProvider
+		err = json.Unmarshal(tx.Bucket([]byte("EscrowProviders")).Get([]byte(ch.EscrowProvider.Pubkey)), ep)
+		if err != nil {
+			return err
+		}
+
+		ch.MyAccount = ma
+		ch.TheirAccount = ta
+		ch.EscrowProvider = ep
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func setChannel(db *bolt.DB, ch *core.Channel) error {
 	err := db.Update(func(tx *bolt.Tx) error {
-		indexes, channels := tx.Bucket([]byte("Indexes")), tx.Bucket([]byte("Channels"))
 
 		b, err := json.Marshal(ch)
 		if err != nil {
 			return err
 		}
 
-		primary := []byte(ch.ChannelId)
-
-		err = channels.Put(primary, b)
+		err = tx.Bucket([]byte("Channels")).Put([]byte(ch.ChannelId), b)
 		if err != nil {
 			return err
 		}
 
-		err = indexes.Put(compound.Key(ssb{
+		// Relations
+
+		b, err = json.Marshal(ch.EscrowProvider)
+		if err != nil {
+			return err
+		}
+
+		tx.Bucket([]byte("EscrowProviders")).Put(ch.EscrowProvider.Pubkey, b)
+
+		b, err = json.Marshal(ch.MyAccount)
+		if err != nil {
+			return err
+		}
+
+		tx.Bucket([]byte("MyAccounts")).Put(ch.MyAccount.Pubkey, b)
+
+		b, err = json.Marshal(ch.TheirAccount)
+		if err != nil {
+			return err
+		}
+
+		tx.Bucket([]byte("TheirAccounts")).Put(ch.TheirAccount.Pubkey, b)
+
+		// Indexes
+
+		err = tx.Bucket([]byte("Indexes")).Put(compound.Key(ssb{
 			"EscrowProvider",
 			"Pubkey",
-			ch.Pubkey}), primary)
+			ch.EscrowProvider.Pubkey}), []byte(ch.ChannelId))
 		if err != nil {
 			return err
 		}
 
 		return nil
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *api) fail(w http.ResponseWriter, msg string, status int) {
