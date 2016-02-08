@@ -52,7 +52,7 @@ func setMyAccount(tx *bolt.Tx, ma *core.MyAccount) error {
 		return err
 	}
 
-	err = tx.Bucket([]byte("EscrowProviders")).Put([]byte(ma.Pubkey), b)
+	err = tx.Bucket([]byte("MyAccounts")).Put([]byte(ma.Pubkey), b)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func setTheirAccount(tx *bolt.Tx, ta *core.TheirAccount) error {
 		return err
 	}
 
-	err = tx.Bucket([]byte("EscrowProviders")).Put([]byte(ta.Pubkey), b)
+	err = tx.Bucket([]byte("TheirAccounts")).Put([]byte(ta.Pubkey), b)
 	if err != nil {
 		return err
 	}
