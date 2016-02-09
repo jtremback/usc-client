@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/jtremback/usc-client/access"
+	core "github.com/jtremback/usc-core/client"
 )
 
 type api struct {
@@ -29,19 +29,19 @@ func testTicker(t time.Time) {
 	fmt.Println("Tick at", t)
 }
 
-func testHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) testHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
 }
 
-func viewChannels(w http.ResponseWriter, r *http.Request) {
+func (a *api) viewChannels(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
 }
 
-func newChannel(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
+func (a *api) newChannel(w http.ResponseWriter, r *http.Request) {
+
 }
 
-func viewAccounts(w http.ResponseWriter, r *http.Request) {
+func (a *api) viewAccounts(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
 }
 
@@ -49,15 +49,31 @@ func (a *api) newAccount(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
 }
 
-func viewEscrowProviders(w http.ResponseWriter, r *http.Request) {
+func (a *api) viewJudges(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
 }
 
-func addEscrowProvider(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
+func (a *api) addJudge(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil {
+		a.fail(w, "no body", 500)
+		return
+	}
+
+	jd := &core.Judge{}
+	err := json.NewDecoder(r.Body).Decode(jd)
+	if err != nil {
+		panic(err)
+	}
+
+	a.db.Update(func(tx *bolt.Tx) error {
+		access.SetJudge(tx, jd)
+		return nil
+	})
+
+	json.NewEncoder(w).Encode(jd)
 }
 
-func viewPeers(w http.ResponseWriter, r *http.Request) {
+func (a *api) viewPeers(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
 }
 

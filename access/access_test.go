@@ -1,7 +1,8 @@
-package db
+package access
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -19,7 +20,7 @@ func TestSetJudge(t *testing.T) {
 	defer db.Close()
 	defer os.Remove("/tmp/test.db")
 
-	err = makeBuckets(db)
+	err = MakeBuckets(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +33,7 @@ func TestSetJudge(t *testing.T) {
 	ju2 := &core.Judge{}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := setJudge(tx, ju)
+		err := SetJudge(tx, ju)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -40,6 +41,7 @@ func TestSetJudge(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
+		fmt.Println(string(tx.Bucket([]byte("Judges")).Get(ju.Pubkey)))
 		err := json.Unmarshal(tx.Bucket([]byte("Judges")).Get(ju.Pubkey), ju2)
 		if err != nil {
 			t.Fatal(err)
@@ -60,7 +62,7 @@ func TestSetMyAccount(t *testing.T) {
 	defer db.Close()
 	defer os.Remove("/tmp/test.db")
 
-	err = makeBuckets(db)
+	err = MakeBuckets(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +79,7 @@ func TestSetMyAccount(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := setMyAccount(tx, ma)
+		err := SetMyAccount(tx, ma)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -110,7 +112,7 @@ func TestPopulateMyAccount(t *testing.T) {
 	defer db.Close()
 	defer os.Remove("/tmp/test.db")
 
-	err = makeBuckets(db)
+	err = MakeBuckets(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,12 +135,12 @@ func TestPopulateMyAccount(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := setMyAccount(tx, ma)
+		err := SetMyAccount(tx, ma)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = setJudge(tx, ju)
+		err = SetJudge(tx, ju)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -147,7 +149,7 @@ func TestPopulateMyAccount(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		err := populateMyAccount(tx, ma)
+		err := PopulateMyAccount(tx, ma)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -167,7 +169,7 @@ func TestSetTheirAccount(t *testing.T) {
 	defer db.Close()
 	defer os.Remove("/tmp/test.db")
 
-	err = makeBuckets(db)
+	err = MakeBuckets(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +185,7 @@ func TestSetTheirAccount(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := setTheirAccount(tx, ta)
+		err := SetTheirAccount(tx, ta)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -216,7 +218,7 @@ func TestPopulateTheirAccount(t *testing.T) {
 	defer db.Close()
 	defer os.Remove("/tmp/test.db")
 
-	err = makeBuckets(db)
+	err = MakeBuckets(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,12 +240,12 @@ func TestPopulateTheirAccount(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := setTheirAccount(tx, ta)
+		err := SetTheirAccount(tx, ta)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = setJudge(tx, ju)
+		err = SetJudge(tx, ju)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -252,7 +254,7 @@ func TestPopulateTheirAccount(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		err := populateTheirAccount(tx, ta)
+		err := PopulateTheirAccount(tx, ta)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -272,7 +274,7 @@ func TestSetChannel(t *testing.T) {
 	defer db.Close()
 	defer os.Remove("/tmp/test.db")
 
-	err = makeBuckets(db)
+	err = MakeBuckets(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +325,7 @@ func TestSetChannel(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := setChannel(tx, ch)
+		err := SetChannel(tx, ch)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -371,7 +373,7 @@ func TestPopulateChannel(t *testing.T) {
 	defer db.Close()
 	defer os.Remove("/tmp/test.db")
 
-	err = makeBuckets(db)
+	err = MakeBuckets(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -450,22 +452,22 @@ func TestPopulateChannel(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := setChannel(tx, ch)
+		err := SetChannel(tx, ch)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = setMyAccount(tx, ma)
+		err = SetMyAccount(tx, ma)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = setJudge(tx, ju)
+		err = SetJudge(tx, ju)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = setTheirAccount(tx, ta)
+		err = SetTheirAccount(tx, ta)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -474,7 +476,7 @@ func TestPopulateChannel(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		err = populateChannel(tx, ch)
+		err = PopulateChannel(tx, ch)
 		if err != nil {
 			t.Fatal(err)
 		}
