@@ -10,14 +10,15 @@ import (
 
 // compound index types
 type ssb struct {
-	b string
-	c string
-	d []byte
+	A string
+	B string
+	C []byte
 }
 
 func makeBuckets(db *bolt.DB) error {
 	err := db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte("Channels"))
+		_, err := tx.CreateBucketIfNotExists([]byte("Indexes"))
+		_, err = tx.CreateBucketIfNotExists([]byte("Channels"))
 		_, err = tx.CreateBucketIfNotExists([]byte("EscrowProviders"))
 		_, err = tx.CreateBucketIfNotExists([]byte("MyAccounts"))
 		_, err = tx.CreateBucketIfNotExists([]byte("TheirAccounts"))
@@ -57,16 +58,27 @@ func setMyAccount(tx *bolt.Tx, ma *core.MyAccount) error {
 		return err
 	}
 
-	return nil
-}
+	// Relations
 
-func populateMyAccount(tx *bolt.Tx, ma *core.MyAccount) error {
-	var ep *core.EscrowProvider
-	err := json.Unmarshal(tx.Bucket([]byte("EscrowProviders")).Get([]byte(ma.EscrowProvider.Pubkey)), ep)
+	b, err = json.Marshal(ma.EscrowProvider)
 	if err != nil {
 		return err
 	}
 
+	err = tx.Bucket([]byte("EscrowProviders")).Put(ma.EscrowProvider.Pubkey, b)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func populateMyAccount(tx *bolt.Tx, ma *core.MyAccount) error {
+	ep := &core.EscrowProvider{}
+	err := json.Unmarshal(tx.Bucket([]byte("EscrowProviders")).Get([]byte(ma.EscrowProvider.Pubkey)), ep)
+	if err != nil {
+		return err
+	}
 	ma.EscrowProvider = ep
 
 	return nil
@@ -83,12 +95,23 @@ func setTheirAccount(tx *bolt.Tx, ta *core.TheirAccount) error {
 		return err
 	}
 
-	return nil
+	// Relations
 
+	b, err = json.Marshal(ta.EscrowProvider)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Bucket([]byte("EscrowProviders")).Put(ta.EscrowProvider.Pubkey, b)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func populateTheirAccount(tx *bolt.Tx, ta *core.TheirAccount) error {
-	var ep *core.EscrowProvider
+	ep := &core.EscrowProvider{}
 	err := json.Unmarshal(tx.Bucket([]byte("EscrowProviders")).Get([]byte(ta.EscrowProvider.Pubkey)), ep)
 	if err != nil {
 		return err
@@ -104,7 +127,6 @@ func setChannel(tx *bolt.Tx, ch *core.Channel) error {
 	if err != nil {
 		return err
 	}
-
 	err = tx.Bucket([]byte("Channels")).Put([]byte(ch.ChannelId), b)
 	if err != nil {
 		return err
@@ -155,7 +177,7 @@ func setChannel(tx *bolt.Tx, ch *core.Channel) error {
 }
 
 func populateChannel(tx *bolt.Tx, ch *core.Channel) error {
-	var ma *core.MyAccount
+	ma := &core.MyAccount{}
 	err := json.Unmarshal(tx.Bucket([]byte("MyAccounts")).Get([]byte(ch.MyAccount.Pubkey)), ma)
 	if err != nil {
 		return err
@@ -165,7 +187,7 @@ func populateChannel(tx *bolt.Tx, ch *core.Channel) error {
 		return err
 	}
 
-	var ta *core.TheirAccount
+	ta := &core.TheirAccount{}
 	err = json.Unmarshal(tx.Bucket([]byte("TheirAccounts")).Get([]byte(ch.TheirAccount.Pubkey)), ta)
 	if err != nil {
 		return err
@@ -175,7 +197,7 @@ func populateChannel(tx *bolt.Tx, ch *core.Channel) error {
 		return err
 	}
 
-	var ep *core.EscrowProvider
+	ep := &core.EscrowProvider{}
 	err = json.Unmarshal(tx.Bucket([]byte("EscrowProviders")).Get([]byte(ch.EscrowProvider.Pubkey)), ep)
 	if err != nil {
 		return err
