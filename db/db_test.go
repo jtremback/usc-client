@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
-	core "github.com/jtremback/upc-core/wallet"
-	"github.com/jtremback/upc-core/wire"
+	core "github.com/jtremback/usc-core/client"
+	"github.com/jtremback/usc-core/wire"
 )
 
-func TestSetEscrowProvider(t *testing.T) {
+func TestSetJudge(t *testing.T) {
 	db, err := bolt.Open("/tmp/test.db", 0600, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -24,15 +24,15 @@ func TestSetEscrowProvider(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ep := &core.EscrowProvider{
+	ju := &core.Judge{
 		Name:    "joe",
 		Pubkey:  []byte{40, 40, 40},
 		Address: "stoops.com:3004",
 	}
-	ep2 := &core.EscrowProvider{}
+	ju2 := &core.Judge{}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := setEscrowProvider(tx, ep)
+		err := setJudge(tx, ju)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -40,14 +40,14 @@ func TestSetEscrowProvider(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		err := json.Unmarshal(tx.Bucket([]byte("EscrowProviders")).Get(ep.Pubkey), ep2)
+		err := json.Unmarshal(tx.Bucket([]byte("Judges")).Get(ju.Pubkey), ju2)
 		if err != nil {
 			t.Fatal(err)
 		}
 		return nil
 	})
 
-	if !reflect.DeepEqual(ep, ep2) {
+	if !reflect.DeepEqual(ju, ju2) {
 		t.Fatal("structs not equal :(")
 	}
 }
@@ -69,7 +69,7 @@ func TestSetMyAccount(t *testing.T) {
 		Name:    "boogie",
 		Privkey: []byte{30, 30, 30},
 		Pubkey:  []byte{40, 40, 40},
-		EscrowProvider: &core.EscrowProvider{
+		Judge: &core.Judge{
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
@@ -91,12 +91,12 @@ func TestSetMyAccount(t *testing.T) {
 			t.Fatal("MyAccount incorrect")
 		}
 
-		fromDB := tx.Bucket([]byte("EscrowProviders")).Get(ma.EscrowProvider.Pubkey)
-		ep := &core.EscrowProvider{}
-		json.Unmarshal(fromDB, ep)
+		fromDB := tx.Bucket([]byte("Judges")).Get(ma.Judge.Pubkey)
+		ju := &core.Judge{}
+		json.Unmarshal(fromDB, ju)
 
-		if !reflect.DeepEqual(ma.EscrowProvider, ep) {
-			t.Fatal("EscrowProvider incorrect", ma.EscrowProvider, ep, string(tx.Bucket([]byte("EscrowProviders")).Get(ma.EscrowProvider.Pubkey)))
+		if !reflect.DeepEqual(ma.Judge, ju) {
+			t.Fatal("Judge incorrect", ma.Judge, ju, string(tx.Bucket([]byte("Judges")).Get(ma.Judge.Pubkey)))
 		}
 		return nil
 	})
@@ -119,14 +119,14 @@ func TestPopulateMyAccount(t *testing.T) {
 		Name:    "boogie",
 		Privkey: []byte{30, 30, 30},
 		Pubkey:  []byte{40, 40, 40},
-		EscrowProvider: &core.EscrowProvider{
+		Judge: &core.Judge{
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
 		},
 	}
 
-	ep := &core.EscrowProvider{
+	ju := &core.Judge{
 		Name:    "joe",
 		Pubkey:  []byte{40, 40, 40},
 		Address: "stoops.com:3004",
@@ -138,7 +138,7 @@ func TestPopulateMyAccount(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = setEscrowProvider(tx, ep)
+		err = setJudge(tx, ju)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -152,8 +152,8 @@ func TestPopulateMyAccount(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(ma.EscrowProvider, ep) {
-			t.Fatal("EscrowProvider incorrect", ma.EscrowProvider, ep)
+		if !reflect.DeepEqual(ma.Judge, ju) {
+			t.Fatal("Judge incorrect", ma.Judge, ju)
 		}
 		return nil
 	})
@@ -175,7 +175,7 @@ func TestSetTheirAccount(t *testing.T) {
 	ta := &core.TheirAccount{
 		Name:   "boogie",
 		Pubkey: []byte{40, 40, 40},
-		EscrowProvider: &core.EscrowProvider{
+		Judge: &core.Judge{
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
@@ -197,12 +197,12 @@ func TestSetTheirAccount(t *testing.T) {
 			t.Fatal("TheirAccount incorrect")
 		}
 
-		fromDB := tx.Bucket([]byte("EscrowProviders")).Get(ta.EscrowProvider.Pubkey)
-		ep := &core.EscrowProvider{}
-		json.Unmarshal(fromDB, ep)
+		fromDB := tx.Bucket([]byte("Judges")).Get(ta.Judge.Pubkey)
+		ju := &core.Judge{}
+		json.Unmarshal(fromDB, ju)
 
-		if !reflect.DeepEqual(ta.EscrowProvider, ep) {
-			t.Fatal("EscrowProvider incorrect", ta.EscrowProvider, ep, string(tx.Bucket([]byte("EscrowProviders")).Get(ta.EscrowProvider.Pubkey)))
+		if !reflect.DeepEqual(ta.Judge, ju) {
+			t.Fatal("Judge incorrect", ta.Judge, ju, string(tx.Bucket([]byte("Judges")).Get(ta.Judge.Pubkey)))
 		}
 		return nil
 	})
@@ -224,14 +224,14 @@ func TestPopulateTheirAccount(t *testing.T) {
 	ta := &core.TheirAccount{
 		Name:   "boogie",
 		Pubkey: []byte{40, 40, 40},
-		EscrowProvider: &core.EscrowProvider{
+		Judge: &core.Judge{
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
 		},
 	}
 
-	ep := &core.EscrowProvider{
+	ju := &core.Judge{
 		Name:    "joe",
 		Pubkey:  []byte{40, 40, 40},
 		Address: "stoops.com:3004",
@@ -243,7 +243,7 @@ func TestPopulateTheirAccount(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = setEscrowProvider(tx, ep)
+		err = setJudge(tx, ju)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -257,8 +257,8 @@ func TestPopulateTheirAccount(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(ta.EscrowProvider, ep) {
-			t.Fatal("EscrowProvider incorrect", ta.EscrowProvider, ep)
+		if !reflect.DeepEqual(ta.Judge, ju) {
+			t.Fatal("Judge incorrect", ta.Judge, ju)
 		}
 		return nil
 	})
@@ -293,7 +293,7 @@ func TestSetChannel(t *testing.T) {
 		Me:           0,
 		Fulfillments: [][]byte{[]byte{80, 80}},
 
-		EscrowProvider: &core.EscrowProvider{
+		Judge: &core.Judge{
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
@@ -303,7 +303,7 @@ func TestSetChannel(t *testing.T) {
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Privkey: []byte{40, 40, 40},
-			EscrowProvider: &core.EscrowProvider{
+			Judge: &core.Judge{
 				Name:    "wrong",
 				Pubkey:  []byte{40, 40, 40},
 				Address: "stoops.com:3004",
@@ -314,7 +314,7 @@ func TestSetChannel(t *testing.T) {
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
-			EscrowProvider: &core.EscrowProvider{
+			Judge: &core.Judge{
 				Name:    "wrong",
 				Pubkey:  []byte{40, 40, 40},
 				Address: "stoops.com:3004",
@@ -336,12 +336,12 @@ func TestSetChannel(t *testing.T) {
 		if !reflect.DeepEqual(ch, ch2) {
 			t.Fatal("Channel incorrect")
 		}
-		epJson := tx.Bucket([]byte("EscrowProviders")).Get(ch.EscrowProvider.Pubkey)
-		ep := &core.EscrowProvider{}
-		json.Unmarshal(epJson, ep)
+		juJson := tx.Bucket([]byte("Judges")).Get(ch.Judge.Pubkey)
+		ju := &core.Judge{}
+		json.Unmarshal(juJson, ju)
 
-		if !reflect.DeepEqual(ch.EscrowProvider, ep) {
-			t.Fatal("EscrowProvider incorrect")
+		if !reflect.DeepEqual(ch.Judge, ju) {
+			t.Fatal("Judge incorrect")
 		}
 
 		maJson := tx.Bucket([]byte("MyAccounts")).Get(ch.MyAccount.Pubkey)
@@ -392,7 +392,7 @@ func TestPopulateChannel(t *testing.T) {
 		Me:           0,
 		Fulfillments: [][]byte{[]byte{80, 80}},
 
-		EscrowProvider: &core.EscrowProvider{
+		Judge: &core.Judge{
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
@@ -402,7 +402,7 @@ func TestPopulateChannel(t *testing.T) {
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Privkey: []byte{40, 40, 40},
-			EscrowProvider: &core.EscrowProvider{
+			Judge: &core.Judge{
 				Name:    "wrong",
 				Pubkey:  []byte{40, 40, 40},
 				Address: "stoops.com:3004",
@@ -413,7 +413,7 @@ func TestPopulateChannel(t *testing.T) {
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
-			EscrowProvider: &core.EscrowProvider{
+			Judge: &core.Judge{
 				Name:    "wrong",
 				Pubkey:  []byte{40, 40, 40},
 				Address: "stoops.com:3004",
@@ -421,7 +421,7 @@ func TestPopulateChannel(t *testing.T) {
 		},
 	}
 
-	ep := &core.EscrowProvider{
+	ju := &core.Judge{
 		Name:    "joe",
 		Pubkey:  []byte{40, 40, 40},
 		Address: "stoops.com:3004",
@@ -431,7 +431,7 @@ func TestPopulateChannel(t *testing.T) {
 		Name:    "crow",
 		Pubkey:  []byte{40, 40, 40},
 		Privkey: []byte{40, 40, 40},
-		EscrowProvider: &core.EscrowProvider{
+		Judge: &core.Judge{
 			Name:    "joe",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
@@ -442,7 +442,7 @@ func TestPopulateChannel(t *testing.T) {
 		Name:    "flerb",
 		Pubkey:  []byte{40, 40, 40},
 		Address: "stoops.com:3004",
-		EscrowProvider: &core.EscrowProvider{
+		Judge: &core.Judge{
 			Name:    "joe",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
@@ -460,7 +460,7 @@ func TestPopulateChannel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = setEscrowProvider(tx, ep)
+		err = setJudge(tx, ju)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -479,8 +479,8 @@ func TestPopulateChannel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(ch.EscrowProvider, ep) {
-			t.Fatal("EscrowProvider incorrect", ta.EscrowProvider, ep)
+		if !reflect.DeepEqual(ch.Judge, ju) {
+			t.Fatal("Judge incorrect", ta.Judge, ju)
 		}
 
 		if !reflect.DeepEqual(ch.MyAccount, ma) {

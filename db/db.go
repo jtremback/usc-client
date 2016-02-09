@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/boltdb/bolt"
-	core "github.com/jtremback/upc-core/wallet"
+	core "github.com/jtremback/usc-core/client"
 	"github.com/tv42/compound"
 )
 
@@ -19,7 +19,7 @@ func makeBuckets(db *bolt.DB) error {
 	err := db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte("Indexes"))
 		_, err = tx.CreateBucketIfNotExists([]byte("Channels"))
-		_, err = tx.CreateBucketIfNotExists([]byte("EscrowProviders"))
+		_, err = tx.CreateBucketIfNotExists([]byte("Judges"))
 		_, err = tx.CreateBucketIfNotExists([]byte("MyAccounts"))
 		_, err = tx.CreateBucketIfNotExists([]byte("TheirAccounts"))
 		if err != nil {
@@ -33,13 +33,13 @@ func makeBuckets(db *bolt.DB) error {
 	return nil
 }
 
-func setEscrowProvider(tx *bolt.Tx, ep *core.EscrowProvider) error {
+func setJudge(tx *bolt.Tx, ep *core.Judge) error {
 	b, err := json.Marshal(ep)
 	if err != nil {
 		return err
 	}
 
-	err = tx.Bucket([]byte("EscrowProviders")).Put(ep.Pubkey, b)
+	err = tx.Bucket([]byte("Judges")).Put(ep.Pubkey, b)
 	if err != nil {
 		return err
 	}
@@ -60,12 +60,12 @@ func setMyAccount(tx *bolt.Tx, ma *core.MyAccount) error {
 
 	// Relations
 
-	b, err = json.Marshal(ma.EscrowProvider)
+	b, err = json.Marshal(ma.Judge)
 	if err != nil {
 		return err
 	}
 
-	err = tx.Bucket([]byte("EscrowProviders")).Put(ma.EscrowProvider.Pubkey, b)
+	err = tx.Bucket([]byte("Judges")).Put(ma.Judge.Pubkey, b)
 	if err != nil {
 		return err
 	}
@@ -74,12 +74,12 @@ func setMyAccount(tx *bolt.Tx, ma *core.MyAccount) error {
 }
 
 func populateMyAccount(tx *bolt.Tx, ma *core.MyAccount) error {
-	ep := &core.EscrowProvider{}
-	err := json.Unmarshal(tx.Bucket([]byte("EscrowProviders")).Get([]byte(ma.EscrowProvider.Pubkey)), ep)
+	ep := &core.Judge{}
+	err := json.Unmarshal(tx.Bucket([]byte("Judges")).Get([]byte(ma.Judge.Pubkey)), ep)
 	if err != nil {
 		return err
 	}
-	ma.EscrowProvider = ep
+	ma.Judge = ep
 
 	return nil
 }
@@ -97,12 +97,12 @@ func setTheirAccount(tx *bolt.Tx, ta *core.TheirAccount) error {
 
 	// Relations
 
-	b, err = json.Marshal(ta.EscrowProvider)
+	b, err = json.Marshal(ta.Judge)
 	if err != nil {
 		return err
 	}
 
-	err = tx.Bucket([]byte("EscrowProviders")).Put(ta.EscrowProvider.Pubkey, b)
+	err = tx.Bucket([]byte("Judges")).Put(ta.Judge.Pubkey, b)
 	if err != nil {
 		return err
 	}
@@ -111,13 +111,13 @@ func setTheirAccount(tx *bolt.Tx, ta *core.TheirAccount) error {
 }
 
 func populateTheirAccount(tx *bolt.Tx, ta *core.TheirAccount) error {
-	ep := &core.EscrowProvider{}
-	err := json.Unmarshal(tx.Bucket([]byte("EscrowProviders")).Get([]byte(ta.EscrowProvider.Pubkey)), ep)
+	ep := &core.Judge{}
+	err := json.Unmarshal(tx.Bucket([]byte("Judges")).Get([]byte(ta.Judge.Pubkey)), ep)
 	if err != nil {
 		return err
 	}
 
-	ta.EscrowProvider = ep
+	ta.Judge = ep
 
 	return nil
 }
@@ -136,12 +136,12 @@ func setChannel(tx *bolt.Tx, ch *core.Channel) error {
 
 	// Escrow Provider
 
-	b, err = json.Marshal(ch.EscrowProvider)
+	b, err = json.Marshal(ch.Judge)
 	if err != nil {
 		return err
 	}
 
-	tx.Bucket([]byte("EscrowProviders")).Put(ch.EscrowProvider.Pubkey, b)
+	tx.Bucket([]byte("Judges")).Put(ch.Judge.Pubkey, b)
 
 	// My Account
 
@@ -166,9 +166,9 @@ func setChannel(tx *bolt.Tx, ch *core.Channel) error {
 	// Escrow Provider Pubkey
 
 	err = tx.Bucket([]byte("Indexes")).Put(compound.Key(ssb{
-		"EscrowProvider",
+		"Judge",
 		"Pubkey",
-		ch.EscrowProvider.Pubkey}), []byte(ch.ChannelId))
+		ch.Judge.Pubkey}), []byte(ch.ChannelId))
 	if err != nil {
 		return err
 	}
@@ -197,15 +197,15 @@ func populateChannel(tx *bolt.Tx, ch *core.Channel) error {
 		return err
 	}
 
-	ep := &core.EscrowProvider{}
-	err = json.Unmarshal(tx.Bucket([]byte("EscrowProviders")).Get([]byte(ch.EscrowProvider.Pubkey)), ep)
+	ep := &core.Judge{}
+	err = json.Unmarshal(tx.Bucket([]byte("Judges")).Get([]byte(ch.Judge.Pubkey)), ep)
 	if err != nil {
 		return err
 	}
 
 	ch.MyAccount = ma
 	ch.TheirAccount = ta
-	ch.EscrowProvider = ep
+	ch.Judge = ep
 
 	return nil
 }
