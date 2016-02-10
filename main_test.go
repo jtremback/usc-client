@@ -12,7 +12,7 @@ import (
 	"github.com/jtremback/usc-client/access"
 )
 
-func TestSetJudge(t *testing.T) {
+func TestAddJudge(t *testing.T) {
 	db, err := bolt.Open("/tmp/test.db", 0600, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -27,8 +27,8 @@ func TestSetJudge(t *testing.T) {
 	app := &api{db}
 	req, err := http.NewRequest("GET", "http://localhost:3004", strings.NewReader(`{
     "name": "joe",
-    "pubkey": "KCgo",
-    "address": "crunk.com:3403"
+    "pubkey": "R5lVVs82M80i5OpR369StJqaHS61Ld+PzTCfS+0zyAA=",
+    "address": "http://localhost:3401"
   }`))
 	if err != nil {
 		t.Fatal(err)
@@ -42,7 +42,7 @@ func TestSetJudge(t *testing.T) {
 	}
 
 	db.View(func(tx *bolt.Tx) error {
-		ref := []byte(`{"Name":"joe","Pubkey":"KCgo","Address":"crunk.com:3403"}`)
+		ref := []byte(`{"Name":"joe","Pubkey":"R5lVVs82M80i5OpR369StJqaHS61Ld+PzTCfS+0zyAA=","Address":"http://localhost:3401"}`)
 
 		fromDB := tx.Bucket([]byte("Judges")).Get([]byte{40, 40, 40})
 
@@ -51,5 +51,4 @@ func TestSetJudge(t *testing.T) {
 		}
 		return nil
 	})
-
 }

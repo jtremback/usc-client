@@ -70,7 +70,40 @@ func (a *api) addJudge(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 
-	json.NewEncoder(w).Encode(jd)
+	a.send(w, "ok")
+}
+
+func (a *api) addMyAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil {
+		a.fail(w, "no body", 500)
+		return
+	}
+
+	req := &struct {
+		Data        *core.MyAccount
+		JudgePubkey []byte
+	}{}
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		a.fail(w, "body parsing error", 500)
+	}
+
+	if len(req.JudgePubkey) == 0 {
+		a.fail(w, "missing judge_pubkey", 500)
+	}
+
+	a.db.Update(func(tx *bolt.Tx) error {
+		jd := &core.Judge{}
+		err := json.Unmarshal(tx.Bucket([]byte("Judges")).Get([]byte(req.JudgePubkey)), jd)
+		if err != nil {
+			a.fail(w, "missing judge_pubkey", 500)
+		}
+		req.Data.Judge = jd
+		access.SetMyAccount(tx, req.Data)
+		return nil
+	})
+
+	a.send(w, "ok")
 }
 
 func (a *api) viewPeers(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +122,7 @@ func (a *api) fail(w http.ResponseWriter, msg string, status int) {
 	w.Write(resp)
 }
 
-func (a *api) ok(w http.ResponseWriter, data interface{}) {
+func (a *api) send(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 
 	resp, err := json.Marshal(data)
