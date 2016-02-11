@@ -29,30 +29,6 @@ func testTicker(t time.Time) {
 	fmt.Println("Tick at", t)
 }
 
-func (a *api) testHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
-}
-
-func (a *api) viewChannels(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
-}
-
-func (a *api) newChannel(w http.ResponseWriter, r *http.Request) {
-
-}
-
-func (a *api) viewAccounts(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
-}
-
-func (a *api) newAccount(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
-}
-
-func (a *api) viewJudges(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
-}
-
 func (a *api) addJudge(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		a.fail(w, "no body", 500)
@@ -104,10 +80,6 @@ func (a *api) addMyAccount(w http.ResponseWriter, r *http.Request) {
 	})
 
 	a.send(w, "ok")
-}
-
-func (a *api) viewPeers(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", "one", "two")
 }
 
 func (a *api) fail(w http.ResponseWriter, msg string, status int) {

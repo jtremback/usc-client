@@ -482,7 +482,7 @@ func TestPopulateChannel(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(ch.Judge, ju) {
-			t.Fatal("Judge incorrect", ta.Judge, ju)
+			t.Fatal("Judge incorrect", ch.Judge, ju)
 		}
 
 		if !reflect.DeepEqual(ch.MyAccount, ma) {

@@ -26,7 +26,7 @@ func TestAddJudge(t *testing.T) {
 
 	app := &api{db}
 	req, err := http.NewRequest("GET", "http://localhost:3004", strings.NewReader(`{
-    "name": "joe",
+    "name": "sffcu",
     "pubkey": "R5lVVs82M80i5OpR369StJqaHS61Ld+PzTCfS+0zyAA=",
     "address": "http://localhost:3401"
   }`))
@@ -42,12 +42,12 @@ func TestAddJudge(t *testing.T) {
 	}
 
 	db.View(func(tx *bolt.Tx) error {
-		ref := []byte(`{"Name":"joe","Pubkey":"R5lVVs82M80i5OpR369StJqaHS61Ld+PzTCfS+0zyAA=","Address":"http://localhost:3401"}`)
+		ref := []byte(`{"Name":"sffcu","Pubkey":"R5lVVs82M80i5OpR369StJqaHS61Ld+PzTCfS+0zyAA=","Address":"http://localhost:3401"}`)
 
-		fromDB := tx.Bucket([]byte("Judges")).Get([]byte{40, 40, 40})
+		fromDB := tx.Bucket([]byte("Judges")).Get([]byte{71, 153, 85, 86, 207, 54, 51, 205, 34, 228, 234, 81, 223, 175, 82, 180, 154, 154, 29, 46, 181, 45, 223, 143, 205, 48, 159, 75, 237, 51, 200, 0})
 
 		if bytes.Compare(fromDB, ref) != 0 {
-			t.Fatal("saved data not correct", string(fromDB), string(ref))
+			t.Fatal("saved data not correct", string(fromDB), "shib", string(ref))
 		}
 		return nil
 	})

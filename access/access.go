@@ -1,6 +1,7 @@
 package access
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/boltdb/bolt"
@@ -73,6 +74,19 @@ func SetMyAccount(tx *bolt.Tx, ma *core.MyAccount) error {
 	return nil
 }
 
+func GetMyAccount(tx *bolt.Tx, key []byte) (*core.MyAccount, error) {
+	ma := &core.MyAccount{}
+	err := json.Unmarshal(tx.Bucket([]byte("MyAccounts")).Get(key), ma)
+	if err != nil {
+		return nil, err
+	}
+	err = PopulateMyAccount(tx, ma)
+	if err != nil {
+		return nil, err
+	}
+	return ma, nil
+}
+
 func PopulateMyAccount(tx *bolt.Tx, ma *core.MyAccount) error {
 	jd := &core.Judge{}
 	err := json.Unmarshal(tx.Bucket([]byte("Judges")).Get([]byte(ma.Judge.Pubkey)), jd)
@@ -108,6 +122,19 @@ func SetTheirAccount(tx *bolt.Tx, ta *core.TheirAccount) error {
 	}
 
 	return nil
+}
+
+func GetTheirAccount(tx *bolt.Tx, key []byte) (*core.TheirAccount, error) {
+	ta := &core.TheirAccount{}
+	err := json.Unmarshal(tx.Bucket([]byte("TheirAccounts")).Get(key), ta)
+	if err != nil {
+		return nil, err
+	}
+	err = PopulateTheirAccount(tx, ta)
+	if err != nil {
+		return nil, err
+	}
+	return ta, nil
 }
 
 func PopulateTheirAccount(tx *bolt.Tx, ta *core.TheirAccount) error {
@@ -174,6 +201,24 @@ func SetChannel(tx *bolt.Tx, ch *core.Channel) error {
 	}
 
 	return nil
+}
+
+func GetChannel(tx *bolt.Tx, key string) (*core.Channel, error) {
+	b := tx.Bucket([]byte("Channels")).Get([]byte(key))
+	if bytes.Compare(b, []byte{}) == 0 {
+		return nil, nil
+	}
+
+	ch := &core.Channel{}
+	err := json.Unmarshal(b, ch)
+	if err != nil {
+		return nil, err
+	}
+	err = PopulateChannel(tx, ch)
+	if err != nil {
+		return nil, err
+	}
+	return ch, nil
 }
 
 func PopulateChannel(tx *bolt.Tx, ch *core.Channel) error {
