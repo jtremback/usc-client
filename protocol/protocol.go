@@ -5,6 +5,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	core "github.com/jtremback/usc-core/client"
+	"github.com/jtremback/usc-core/wire"
 )
 
 type api struct {
@@ -12,5 +13,11 @@ type api struct {
 }
 
 func (a api) ConfirmOpeningTx(w http.ResponseWriter, r *http.Request) {
-	core.ConfirmOpeningTx()
+
+}
+
+func confirmOpeningTx(acct *core.MyAccount, ev *wire.Envelope) error {
+	var err error
+	ev, otx, err := acct.ConfirmOpeningTx(ev)
+
 }
