@@ -7,21 +7,21 @@ import (
 	"net/http"
 
 	"github.com/boltdb/bolt"
-	"github.com/jtremback/upc_temp/wire"
 	"github.com/jtremback/usc-client/access"
 	core "github.com/jtremback/usc-core/client"
+	"github.com/jtremback/usc-core/wire"
 )
 
 func confirmOpeningTx(db *bolt.DB, callerAddress string, ev *wire.Envelope) error {
 	var err error
-	ev, otx, err = ma.ConfirmOpeningTx(ev)
+	otx, err := core.UnmarshallOpeningTx(ev)
 	if err != nil {
-		return errors.New("server error")
+		return err
 	}
 
 	ma := &core.MyAccount{}
 	err = db.View(func(tx *bolt.Tx) error {
-		ma, err = access.GetMyAccount(tx, mpk)
+		ma, err = access.GetMyAccount(tx, otx.Pubkeys[1])
 		if err != nil {
 			return err
 		}
@@ -32,9 +32,14 @@ func confirmOpeningTx(db *bolt.DB, callerAddress string, ev *wire.Envelope) erro
 		return err
 	}
 
+	ev, err = ma.ConfirmOpeningTx(ev, otx)
+	if err != nil {
+		return errors.New("server error")
+	}
+
 	b, err := json.Marshal(otx)
 
-	resp, err := http.Post(address+"/confirm_opening_tx", "application/json", bytes.NewReader(b))
+	resp, err := http.Post(callerAddress+"/confirm_opening_tx", "application/json", bytes.NewReader(b))
 	if err != nil {
 		return errors.New("network error")
 	}
