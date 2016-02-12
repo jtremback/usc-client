@@ -1,8 +1,8 @@
 package access
 
 import (
-	"bytes"
 	"encoding/json"
+	"errors"
 
 	"github.com/boltdb/bolt"
 	core "github.com/jtremback/usc-core/client"
@@ -78,11 +78,14 @@ func GetMyAccount(tx *bolt.Tx, key []byte) (*core.MyAccount, error) {
 	ma := &core.MyAccount{}
 	err := json.Unmarshal(tx.Bucket([]byte("MyAccounts")).Get(key), ma)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("database error")
+	}
+	if ma == nil {
+		return nil, errors.New("account not found")
 	}
 	err = PopulateMyAccount(tx, ma)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("database error")
 	}
 	return ma, nil
 }
@@ -128,11 +131,14 @@ func GetTheirAccount(tx *bolt.Tx, key []byte) (*core.TheirAccount, error) {
 	ta := &core.TheirAccount{}
 	err := json.Unmarshal(tx.Bucket([]byte("TheirAccounts")).Get(key), ta)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("database error")
+	}
+	if ta == nil {
+		return nil, errors.New("account not found")
 	}
 	err = PopulateTheirAccount(tx, ta)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("database error")
 	}
 	return ta, nil
 }
@@ -203,20 +209,18 @@ func SetChannel(tx *bolt.Tx, ch *core.Channel) error {
 	return nil
 }
 
-func GetChannel(tx *bolt.Tx, key string) (*core.Channel, error) {
-	b := tx.Bucket([]byte("Channels")).Get([]byte(key))
-	if bytes.Compare(b, []byte{}) == 0 {
-		return nil, nil
-	}
-
+func GetChannel(tx *bolt.Tx, key []byte) (*core.Channel, error) {
 	ch := &core.Channel{}
-	err := json.Unmarshal(b, ch)
+	err := json.Unmarshal(tx.Bucket([]byte("Channels")).Get(key), ch)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("database error")
+	}
+	if ch == nil {
+		return nil, errors.New("account not found")
 	}
 	err = PopulateChannel(tx, ch)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("database error")
 	}
 	return ch, nil
 }

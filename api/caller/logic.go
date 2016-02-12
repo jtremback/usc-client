@@ -15,18 +15,12 @@ func newChannel(db *bolt.DB, state []byte, mpk []byte, tpk []byte, hold uint32) 
 	err = db.View(func(tx *bolt.Tx) error {
 		ma, err = access.GetMyAccount(tx, mpk)
 		if err != nil {
-			return errors.New("database error")
-		}
-		if ma == nil {
-			return errors.New("channel not found")
+			return err
 		}
 
 		ta, err = access.GetTheirAccount(tx, tpk)
 		if err != nil {
-			return errors.New("database error")
-		}
-		if ta == nil {
-			return errors.New("channel not found")
+			return err
 		}
 
 		return nil
@@ -59,10 +53,7 @@ func sendUpdateTx(db *bolt.DB, state []byte, chId []byte, fast bool) error {
 		var err error
 		ch, err = access.GetChannel(tx, chId)
 		if err != nil {
-			return errors.New("database error")
-		}
-		if ch == nil {
-			return errors.New("channel not found")
+			return err
 		}
 
 		return nil
