@@ -209,20 +209,42 @@ func SetChannel(tx *bolt.Tx, ch *core.Channel) error {
 	return nil
 }
 
-func GetChannel(tx *bolt.Tx, key []byte) (*core.Channel, error) {
+func GetChannel(tx *bolt.Tx, key string) (*core.Channel, error) {
 	ch := &core.Channel{}
-	err := json.Unmarshal(tx.Bucket([]byte("Channels")).Get(key), ch)
+	err := json.Unmarshal(tx.Bucket([]byte("Channels")).Get([]byte(key)), ch)
 	if err != nil {
 		return nil, errors.New("database error")
 	}
 	if ch == nil {
-		return nil, errors.New("account not found")
+		return nil, errors.New("channel not found")
 	}
 	err = PopulateChannel(tx, ch)
 	if err != nil {
 		return nil, errors.New("database error")
 	}
 	return ch, nil
+}
+
+func GetProposedChannels(tx *bolt.Tx) ([]*core.Channel, error) {
+	var err error
+	chs := []*core.Channel{}
+	i := 0
+	err = tx.Bucket([]byte("Channels")).ForEach(func(k, v []byte) error {
+		ch := &core.Channel{}
+		err = json.Unmarshal(v, ch)
+		if err != nil {
+			return err
+		}
+		if ch.Phase == core.PENDING_OPEN && len(ch.OpeningTxEnvelope.Signatures) == 1 {
+			chs[i] = ch
+			i++
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.New("database error")
+	}
+	return chs, nil
 }
 
 func PopulateChannel(tx *bolt.Tx, ch *core.Channel) error {
