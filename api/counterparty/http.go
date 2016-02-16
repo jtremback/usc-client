@@ -18,7 +18,7 @@ type Api struct {
 }
 
 func (a *Api) MountRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/confirm_opening_tx", a.confirmOpeningTx)
+	mux.HandleFunc("/add_channel", a.addChannel)
 }
 
 func send(ev *wire.Envelope, address string) error {
@@ -37,7 +37,7 @@ func send(ev *wire.Envelope, address string) error {
 	return nil
 }
 
-func (a *Api) confirmOpeningTx(w http.ResponseWriter, r *http.Request) {
+func (a *Api) addChannel(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		a.fail(w, "no body", 500)
 		return
@@ -51,7 +51,7 @@ func (a *Api) confirmOpeningTx(w http.ResponseWriter, r *http.Request) {
 	ev := &wire.Envelope{}
 	proto.Unmarshal(b, ev)
 
-	err = confirmOpeningTx(a.db, a.callerAddress, ev)
+	err = addChannel(a.db, a.callerAddress, ev)
 	if err != nil {
 		a.fail(w, "server error", 500)
 	}

@@ -18,7 +18,7 @@ type Api struct {
 }
 
 func (a *Api) MountRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/new_channel", a.newChannel)
+	mux.HandleFunc("/propose_channel", a.proposeChannel)
 	mux.HandleFunc("/send_update_tx", a.sendUpdateTx)
 }
 
@@ -38,7 +38,7 @@ func send(ev *wire.Envelope, address string) error {
 	return nil
 }
 
-func (a *Api) newChannel(w http.ResponseWriter, r *http.Request) {
+func (a *Api) proposeChannel(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		a.fail(w, "no body", 500)
 		return
@@ -55,7 +55,7 @@ func (a *Api) newChannel(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "body parsing error", 500)
 	}
 
-	err = newChannel(a.db, req.State, req.MyAccountPubkey, req.TheirAccountPubkey, req.HoldPeriod)
+	err = proposeChannel(a.db, req.State, req.MyAccountPubkey, req.TheirAccountPubkey, req.HoldPeriod)
 	if err != nil {
 		a.fail(w, err.Error(), 500)
 	}
@@ -69,7 +69,7 @@ func (a *Api) sendUpdateTx(w http.ResponseWriter, r *http.Request) {
 
 	req := &struct {
 		State     []byte
-		ChannelId []byte
+		ChannelId string
 		Fast      bool
 	}{}
 	err := json.NewDecoder(r.Body).Decode(req)
@@ -82,6 +82,20 @@ func (a *Api) sendUpdateTx(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, err.Error(), 500)
 	}
 }
+
+// func (a *Api) OpeningTxConfirmed(w http.ResponseWriter, r *http.Request) {
+// 	if r.Body == nil {
+// 		a.fail(w, "no body", 500)
+// 		return
+// 	}
+
+// 	req := &struct {
+// 		State     []byte
+// 		ChannelId []byte
+// 		Fast      bool
+// 	}{}
+
+// }
 
 func (a *Api) addJudge(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
