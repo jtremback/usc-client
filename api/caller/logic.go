@@ -10,7 +10,7 @@ import (
 	"github.com/jtremback/usc-core/wire"
 )
 
-func proposeChannel(db *bolt.DB, state []byte, mpk []byte, tpk []byte, hold uint32) error {
+func ProposeChannel(db *bolt.DB, state []byte, mpk []byte, tpk []byte, hold uint32) error {
 	var err error
 	ta := &core.TheirAccount{}
 	ma := &core.MyAccount{}
@@ -59,24 +59,7 @@ func proposeChannel(db *bolt.DB, state []byte, mpk []byte, tpk []byte, hold uint
 	return nil
 }
 
-func getProposedChannels(db *bolt.DB) ([]*core.Channel, error) {
-	var err error
-	chs := []*core.Channel{}
-	err = db.View(func(tx *bolt.Tx) error {
-		chs, err = access.GetProposedChannels(tx)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, errors.New("database error")
-	}
-
-	return chs, nil
-}
-
-func confirmChannel(db *bolt.DB, chID string) error {
+func ConfirmChannel(db *bolt.DB, chID string) error {
 	var err error
 	ch := &core.Channel{}
 	err = db.Update(func(tx *bolt.Tx) error {
@@ -106,7 +89,7 @@ func confirmChannel(db *bolt.DB, chID string) error {
 	return nil
 }
 
-func openChannel(db *bolt.DB, ev *wire.Envelope) error {
+func OpenChannel(db *bolt.DB, ev *wire.Envelope) error {
 	var err error
 
 	ch := &core.Channel{}
@@ -141,7 +124,7 @@ func openChannel(db *bolt.DB, ev *wire.Envelope) error {
 	return nil
 }
 
-func sendUpdateTx(db *bolt.DB, state []byte, chID string, fast bool) error {
+func SendUpdateTx(db *bolt.DB, state []byte, chID string, fast bool) error {
 	var err error
 	ch := &core.Channel{}
 	err = db.Update(func(tx *bolt.Tx) error {
@@ -165,6 +148,11 @@ func sendUpdateTx(db *bolt.DB, state []byte, chID string, fast bool) error {
 			return err
 		}
 
+		access.SetChannel(tx, ch)
+		if err != nil {
+			return errors.New("database error")
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -174,7 +162,7 @@ func sendUpdateTx(db *bolt.DB, state []byte, chID string, fast bool) error {
 	return nil
 }
 
-func confirmUpdateTx(db *bolt.DB, chID string) error {
+func ConfirmUpdateTx(db *bolt.DB, chID string) error {
 	var err error
 	err = db.Update(func(tx *bolt.Tx) error {
 		ch, err := access.GetChannel(tx, chID)
@@ -185,6 +173,50 @@ func confirmUpdateTx(db *bolt.DB, chID string) error {
 		_, err = ch.ConfirmUpdateTx()
 		if err != nil {
 			return err
+		}
+
+		access.SetChannel(tx, ch)
+		if err != nil {
+			return errors.New("database error")
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CheckFinalUpdateTx(db *bolt.DB, ev *wire.Envelope) error {
+	var err error
+	utx := &wire.UpdateTx{}
+	err = proto.Unmarshal(ev.Payload, utx)
+	if err != nil {
+		return err
+	}
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		ch, err := access.GetChannel(tx, utx.ChannelId)
+		if err != nil {
+			return err
+		}
+
+		ev2, err := ch.CheckFinalUpdateTx(ev, utx)
+		if err != nil {
+			return err
+		}
+		if ev2 != nil {
+			err = send(ev2, ch.Judge.Address)
+			if err != nil {
+				return err
+			}
+		}
+
+		access.SetChannel(tx, ch)
+		if err != nil {
+			return errors.New("database error")
 		}
 
 		return nil

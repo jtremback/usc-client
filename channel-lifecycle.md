@@ -16,7 +16,7 @@ When a judge decides to check for proposed channels, they look up all channels w
 
 When a judge decides to confirm a proposed channel, they send a message to usc, which signs the OpeningTx, and starts serving the channel.
 
-caller/open_channel - When the original channel starter's daemon (account 0) finds the fully signed opening tx being served by the judge, they check all three signatures and change the channel state to Open. They then save the channel. (Is it safe to have the channel override previously saved versions of that channel?)
+caller/open_channel - When the original channel starter's daemon (account 0) finds the fully signed opening tx being served by the judge, they check all three signatures and change the channel state to Open. They then save the channel.
 
 
 ## Updating
@@ -34,6 +34,7 @@ caller/confirm_update_tx - When a user wants to approve an update tx, she sends 
 
 caller/close_channel - A user closes a channel by sending the LastFullUpdateTx to the judge.
 
+caller/check_final_update_tx - If a judge posts an updateTx and enters the hold period, the user checks to make sure that its LastFullUpdateTx is not higher than the update tx that the judge has, and places the channel into PENDING_CLOSED if it isnt already. If the LastFullUpdateTx is higher, it sends that to the judge.
 
 ## Daemon
 

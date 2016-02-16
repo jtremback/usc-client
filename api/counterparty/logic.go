@@ -10,7 +10,7 @@ import (
 	"github.com/jtremback/usc-core/wire"
 )
 
-func addChannel(db *bolt.DB, ev *wire.Envelope) error {
+func AddChannel(db *bolt.DB, ev *wire.Envelope) error {
 	var err error
 
 	otx := &wire.OpeningTx{}
@@ -53,7 +53,7 @@ func addChannel(db *bolt.DB, ev *wire.Envelope) error {
 	return nil
 }
 
-func addUpdateTx(db *bolt.DB, ev *wire.Envelope) error {
+func AddUpdateTx(db *bolt.DB, ev *wire.Envelope) error {
 	var err error
 
 	utx := &wire.UpdateTx{}
@@ -89,15 +89,3 @@ func addUpdateTx(db *bolt.DB, ev *wire.Envelope) error {
 
 	return nil
 }
-
-// b, err := json.Marshal(otx)
-
-// resp, err := http.Post(callerAddress+"/confirm_opening_tx", "application/json", bytes.NewReader(b))
-// if err != nil {
-// 	return errors.New("network error")
-// }
-// defer resp.Body.Close()
-
-// if resp.StatusCode != 200 {
-// 	return errors.New("caller error")
-// }

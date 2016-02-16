@@ -55,7 +55,27 @@ func (a *Api) proposeChannel(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "body parsing error", 500)
 	}
 
-	err = proposeChannel(a.db, req.State, req.MyAccountPubkey, req.TheirAccountPubkey, req.HoldPeriod)
+	err = ProposeChannel(a.db, req.State, req.MyAccountPubkey, req.TheirAccountPubkey, req.HoldPeriod)
+	if err != nil {
+		a.fail(w, err.Error(), 500)
+	}
+}
+
+func (a *Api) confirmChannel(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil {
+		a.fail(w, "no body", 500)
+		return
+	}
+
+	req := &struct {
+		ChannelId string
+	}{}
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		a.fail(w, "body parsing error", 500)
+	}
+
+	err = ConfirmChannel(a.db, req.ChannelId)
 	if err != nil {
 		a.fail(w, err.Error(), 500)
 	}
@@ -77,25 +97,31 @@ func (a *Api) sendUpdateTx(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "body parsing error", 500)
 	}
 
-	err = sendUpdateTx(a.db, req.State, req.ChannelId, req.Fast)
+	err = SendUpdateTx(a.db, req.State, req.ChannelId, req.Fast)
 	if err != nil {
 		a.fail(w, err.Error(), 500)
 	}
 }
 
-// func (a *Api) OpeningTxConfirmed(w http.ResponseWriter, r *http.Request) {
-// 	if r.Body == nil {
-// 		a.fail(w, "no body", 500)
-// 		return
-// 	}
+func (a *Api) confirmUpdateTx(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil {
+		a.fail(w, "no body", 500)
+		return
+	}
 
-// 	req := &struct {
-// 		State     []byte
-// 		ChannelId []byte
-// 		Fast      bool
-// 	}{}
+	req := &struct {
+		ChannelId string
+	}{}
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		a.fail(w, "body parsing error", 500)
+	}
 
-// }
+	err = ConfirmUpdateTx(a.db, req.ChannelId)
+	if err != nil {
+		a.fail(w, err.Error(), 500)
+	}
+}
 
 func (a *Api) addJudge(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {

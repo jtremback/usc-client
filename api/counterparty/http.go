@@ -51,7 +51,28 @@ func (a *Api) addChannel(w http.ResponseWriter, r *http.Request) {
 	ev := &wire.Envelope{}
 	proto.Unmarshal(b, ev)
 
-	err = addChannel(a.db, ev)
+	err = AddChannel(a.db, ev)
+	if err != nil {
+		a.fail(w, "server error", 500)
+	}
+	a.send(w, "ok")
+}
+
+func (a *Api) addUpdateTx(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil {
+		a.fail(w, "no body", 500)
+		return
+	}
+
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		a.fail(w, "server error", 500)
+	}
+
+	ev := &wire.Envelope{}
+	proto.Unmarshal(b, ev)
+
+	err = AddUpdateTx(a.db, ev)
 	if err != nil {
 		a.fail(w, "server error", 500)
 	}
