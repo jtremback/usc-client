@@ -123,7 +123,7 @@ func (a *api) sendUpdateTx(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func sendUpdateTx(db *bolt.DB, state []byte, chId []byte, fast bool) error {
+func sendUpdateTx(db *bolt.DB, state []byte, chId string, fast bool) error {
 	ch := &core.Channel{}
 	err := db.View(func(tx *bolt.Tx) error {
 		var err error

@@ -68,13 +68,13 @@ func addUpdateTx(db *bolt.DB, ev *wire.Envelope) error {
 			return err
 		}
 
-		err = ch.CheckUpdateTx()
+		err = ch.CheckUpdateTx(ev, utx)
 		if err != nil {
 			return err
 		}
 
-		ch.LastUpdateTx = utx
-		ch.LastUpdateTxEnvelope = ev
+		ch.ProposedUpdateTx = utx
+		ch.ProposedUpdateTxEnvelope = ev
 
 		access.SetChannel(tx, ch)
 		if err != nil {

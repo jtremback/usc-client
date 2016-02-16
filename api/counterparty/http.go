@@ -51,7 +51,7 @@ func (a *Api) addChannel(w http.ResponseWriter, r *http.Request) {
 	ev := &wire.Envelope{}
 	proto.Unmarshal(b, ev)
 
-	err = addChannel(a.db, a.callerAddress, ev)
+	err = addChannel(a.db, ev)
 	if err != nil {
 		a.fail(w, "server error", 500)
 	}

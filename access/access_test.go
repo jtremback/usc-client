@@ -286,8 +286,8 @@ func TestSetChannel(t *testing.T) {
 		OpeningTx:         &wire.OpeningTx{},
 		OpeningTxEnvelope: &wire.Envelope{},
 
-		LastUpdateTx:         &wire.UpdateTx{},
-		LastUpdateTxEnvelope: &wire.Envelope{},
+		ProposedUpdateTx:         &wire.UpdateTx{},
+		ProposedUpdateTxEnvelope: &wire.Envelope{},
 
 		LastFullUpdateTx:         &wire.UpdateTx{},
 		LastFullUpdateTxEnvelope: &wire.Envelope{},
@@ -385,8 +385,8 @@ func TestPopulateChannel(t *testing.T) {
 		OpeningTx:         &wire.OpeningTx{},
 		OpeningTxEnvelope: &wire.Envelope{},
 
-		LastUpdateTx:         &wire.UpdateTx{},
-		LastUpdateTxEnvelope: &wire.Envelope{},
+		ProposedUpdateTx:         &wire.UpdateTx{},
+		ProposedUpdateTxEnvelope: &wire.Envelope{},
 
 		LastFullUpdateTx:         &wire.UpdateTx{},
 		LastFullUpdateTxEnvelope: &wire.Envelope{},
