@@ -1,7 +1,6 @@
 package caller
 
 import (
-	"bytes"
 	"errors"
 
 	"github.com/boltdb/bolt"
@@ -183,8 +182,9 @@ func confirmUpdateTx(db *bolt.DB, chID string) error {
 			return err
 		}
 
-		if bytes.Compare(ch.ProposedUpdateTxEnvelope.Signatures[ch.Me], []byte{}) == 0 {
-			return errors.New("")
+		_, err = ch.ConfirmUpdateTx()
+		if err != nil {
+			return err
 		}
 
 		return nil

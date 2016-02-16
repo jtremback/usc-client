@@ -27,12 +27,12 @@ counterparty/add_update_tx - When the counterparty receives an update tx, it che
 
 caller/get_proposed_update_txs - When the user wants to check if there are update txs to be approved, she looks for channels with a ProposedUpdateTx not signed by her.
 
-caller/confirm_update_tx - When a user wants to approve an update tx, she sends the channelId to usc. Usc checks if the channel has an update tx to be approved and if so signs it and saves it in LastFullUpdateTx. And clears ProposedUpdateTx.
+caller/confirm_update_tx - When a user wants to approve an update tx, she sends the channelId to usc. Usc checks if the channel has an update tx to be approved and if so signs it and saves it in LastFullUpdateTx, clears ProposedUpdateTx, and sends it to the counterparty.
 
 
 ## Closing
 
-A user closes a channel by sending the LastFullUpdateTx to the judge.
+caller/close_channel - A user closes a channel by sending the LastFullUpdateTx to the judge.
 
 
 ## Daemon
