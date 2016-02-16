@@ -21,13 +21,13 @@ caller/open_channel - When the original channel starter's daemon (account 0) fin
 
 ## Updating
 
-caller/new_update_tx - A user updates a channel by having the caller generate a new state and send it to usc. Usc signs it, sends it to the counterparty, and saves it as LastUpdateTx in the Channel.
+caller/new_update_tx - A user updates a channel by having the caller generate a new state and send it to usc. Usc signs it, sends it to the counterparty, and saves it as ProposedUpdateTx in the Channel.
 
-counterparty/add_update_tx - When the counterparty receives an update tx, it checks if the sequence number is higher than the sequence number of LastFullUpdateTx. It then saves the update tx as LastUpdateTx.
+counterparty/add_update_tx - When the counterparty receives an update tx, it checks if the sequence number is higher than the sequence number of LastFullUpdateTx. It then saves the update tx as ProposedUpdateTx.
 
-caller/get_proposed_update_txs - When the user wants to check if there are update txs to be approved, she looks for channels with a LastUpdateTx not signed by her.
+caller/get_proposed_update_txs - When the user wants to check if there are update txs to be approved, she looks for channels with a ProposedUpdateTx not signed by her.
 
-caller/confirm_update_tx - When a user wants to approve an update tx, she sends the channelId to usc. Usc checks if the channel has an update tx to be approved and if so signs it and saves it in LastFullUpdateTx. And clears LastUpdateTx.
+caller/confirm_update_tx - When a user wants to approve an update tx, she sends the channelId to usc. Usc checks if the channel has an update tx to be approved and if so signs it and saves it in LastFullUpdateTx. And clears ProposedUpdateTx.
 
 
 ## Closing

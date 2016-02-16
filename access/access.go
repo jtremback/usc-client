@@ -1,6 +1,7 @@
 package access
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 
@@ -236,6 +237,28 @@ func GetProposedChannels(tx *bolt.Tx) ([]*core.Channel, error) {
 			return err
 		}
 		if ch.Phase == core.PENDING_OPEN && len(ch.OpeningTxEnvelope.Signatures) == 1 {
+			chs[i] = ch
+			i++
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.New("database error")
+	}
+	return chs, nil
+}
+
+func GetProposedUpdateTxs(tx *bolt.Tx) ([]*core.Channel, error) {
+	var err error
+	chs := []*core.Channel{}
+	i := 0
+	err = tx.Bucket([]byte("Channels")).ForEach(func(k, v []byte) error {
+		ch := &core.Channel{}
+		err = json.Unmarshal(v, ch)
+		if err != nil {
+			return err
+		}
+		if bytes.Compare(ch.ProposedUpdateTxEnvelope.Signatures[ch.Me], []byte{}) == 0 {
 			chs[i] = ch
 			i++
 		}

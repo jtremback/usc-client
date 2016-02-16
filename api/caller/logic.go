@@ -1,6 +1,7 @@
 package caller
 
 import (
+	"bytes"
 	"errors"
 
 	"github.com/boltdb/bolt"
@@ -163,6 +164,27 @@ func sendUpdateTx(db *bolt.DB, state []byte, chID string, fast bool) error {
 		err = send(ev, ch.TheirAccount.Address)
 		if err != nil {
 			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func confirmUpdateTx(db *bolt.DB, chID string) error {
+	var err error
+	err = db.Update(func(tx *bolt.Tx) error {
+		ch, err := access.GetChannel(tx, chID)
+		if err != nil {
+			return err
+		}
+
+		if bytes.Compare(ch.ProposedUpdateTxEnvelope.Signatures[ch.Me], []byte{}) == 0 {
+			return errors.New("")
 		}
 
 		return nil
