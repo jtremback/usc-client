@@ -6,7 +6,7 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jtremback/usc-client/access"
-	core "github.com/jtremback/usc-core/client"
+	core "github.com/jtremback/usc-core/peer"
 	"github.com/jtremback/usc-core/wire"
 )
 

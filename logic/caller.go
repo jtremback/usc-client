@@ -7,7 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/jtremback/usc-client/access"
 	"github.com/jtremback/usc-client/clients"
-	core "github.com/jtremback/usc-core/client"
+	core "github.com/jtremback/usc-core/peer"
 	"github.com/jtremback/usc-core/wire"
 )
 
