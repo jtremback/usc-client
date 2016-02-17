@@ -41,7 +41,7 @@ func (a *Counterparty) AddChannel(ev *wire.Envelope) error {
 			return err
 		}
 
-		ch, err := core.NewChannel(ev, acct, cpt)
+		ch, err := core.NewChannel(ev, otx, acct, cpt)
 
 		access.SetChannel(tx, ch)
 		if err != nil {
