@@ -23,25 +23,25 @@ func (a *Counterparty) AddChannel(ev *wire.Envelope) error {
 		return err
 	}
 
-	ma := &core.Account{}
-	ta := &core.Counterparty{}
+	acct := &core.Account{}
+	cpt := &core.Counterparty{}
 	err = a.db.Update(func(tx *bolt.Tx) error {
 		_, err = access.GetChannel(tx, otx.ChannelId)
 		if err != nil {
 			return errors.New("channel already exists")
 		}
 
-		ta, err = access.GetCounterparty(tx, otx.Pubkeys[0])
+		cpt, err = access.GetCounterparty(tx, otx.Pubkeys[0])
 		if err != nil {
 			return err
 		}
 
-		ma, err = access.GetAccount(tx, otx.Pubkeys[1])
+		acct, err = access.GetAccount(tx, otx.Pubkeys[1])
 		if err != nil {
 			return err
 		}
 
-		ch, err := core.NewChannel(ev, ma, ta)
+		ch, err := core.NewChannel(ev, acct, cpt)
 
 		access.SetChannel(tx, ch)
 		if err != nil {
