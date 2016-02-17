@@ -1,43 +1,24 @@
-package counterparty
+package servers
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/boltdb/bolt"
 	"github.com/golang/protobuf/proto"
+	"github.com/jtremback/usc-client/logic"
 	"github.com/jtremback/usc-core/wire"
 )
 
-type Api struct {
-	db            *bolt.DB
-	callerAddress string
+type CounterpartyHTTP struct {
+	Logic *logic.Counterparty
 }
 
-func (a *Api) MountRoutes(mux *http.ServeMux) {
+func (a *CounterpartyHTTP) MountRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/add_channel", a.addChannel)
 }
 
-func send(ev *wire.Envelope, address string) error {
-	b, err := proto.Marshal(ev)
-
-	resp, err := http.Post(address, "application/octet-stream", bytes.NewReader(b))
-	if err != nil {
-		return errors.New("network error")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return errors.New("counterparty error")
-	}
-
-	return nil
-}
-
-func (a *Api) addChannel(w http.ResponseWriter, r *http.Request) {
+func (a *CounterpartyHTTP) addChannel(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		a.fail(w, "no body", 500)
 		return
@@ -51,14 +32,14 @@ func (a *Api) addChannel(w http.ResponseWriter, r *http.Request) {
 	ev := &wire.Envelope{}
 	proto.Unmarshal(b, ev)
 
-	err = AddChannel(a.db, ev)
+	err = a.Logic.AddChannel(ev)
 	if err != nil {
 		a.fail(w, "server error", 500)
 	}
 	a.send(w, "ok")
 }
 
-func (a *Api) addUpdateTx(w http.ResponseWriter, r *http.Request) {
+func (a *CounterpartyHTTP) addUpdateTx(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		a.fail(w, "no body", 500)
 		return
@@ -72,14 +53,14 @@ func (a *Api) addUpdateTx(w http.ResponseWriter, r *http.Request) {
 	ev := &wire.Envelope{}
 	proto.Unmarshal(b, ev)
 
-	err = AddUpdateTx(a.db, ev)
+	err = a.Logic.AddUpdateTx(ev)
 	if err != nil {
 		a.fail(w, "server error", 500)
 	}
 	a.send(w, "ok")
 }
 
-func (a *Api) fail(w http.ResponseWriter, msg string, status int) {
+func (a *CounterpartyHTTP) fail(w http.ResponseWriter, msg string, status int) {
 	w.Header().Set("Content-Type", "application/json")
 
 	data := struct {
@@ -91,7 +72,7 @@ func (a *Api) fail(w http.ResponseWriter, msg string, status int) {
 	w.Write(resp)
 }
 
-func (a *Api) send(w http.ResponseWriter, data interface{}) {
+func (a *CounterpartyHTTP) send(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 
 	resp, err := json.Marshal(data)

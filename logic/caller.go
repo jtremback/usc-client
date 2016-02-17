@@ -1,4 +1,4 @@
-package caller
+package logic
 
 import (
 	"errors"
@@ -6,15 +6,22 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/golang/protobuf/proto"
 	"github.com/jtremback/usc-client/access"
+	"github.com/jtremback/usc-client/clients"
 	core "github.com/jtremback/usc-core/client"
 	"github.com/jtremback/usc-core/wire"
 )
 
-func ProposeChannel(db *bolt.DB, state []byte, mpk []byte, tpk []byte, hold uint32) error {
+type Caller struct {
+	DB           *bolt.DB
+	Counterparty *clients.Counterparty
+	Judge        *clients.Judge
+}
+
+func (a *Caller) ProposeChannel(state []byte, mpk []byte, tpk []byte, hold uint32) error {
 	var err error
 	ta := &core.TheirAccount{}
 	ma := &core.MyAccount{}
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = a.DB.Update(func(tx *bolt.Tx) error {
 		ma, err = access.GetMyAccount(tx, mpk)
 		if err != nil {
 			return err
@@ -40,7 +47,7 @@ func ProposeChannel(db *bolt.DB, state []byte, mpk []byte, tpk []byte, hold uint
 			return errors.New("server error")
 		}
 
-		err = send(ev, ta.Address)
+		err = a.Counterparty.Send(ev, ta.Address)
 		if err != nil {
 			return err
 		}
@@ -59,10 +66,10 @@ func ProposeChannel(db *bolt.DB, state []byte, mpk []byte, tpk []byte, hold uint
 	return nil
 }
 
-func ConfirmChannel(db *bolt.DB, chID string) error {
+func (a *Caller) ConfirmChannel(chID string) error {
 	var err error
 	ch := &core.Channel{}
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = a.DB.Update(func(tx *bolt.Tx) error {
 		ch, err = access.GetChannel(tx, chID)
 		if err != nil {
 			return err
@@ -81,7 +88,7 @@ func ConfirmChannel(db *bolt.DB, chID string) error {
 		return err
 	}
 
-	err = send(ch.OpeningTxEnvelope, ch.Judge.Address)
+	err = a.Judge.Send(ch.OpeningTxEnvelope, ch.Judge.Address)
 	if err != nil {
 		return err
 	}
@@ -89,11 +96,11 @@ func ConfirmChannel(db *bolt.DB, chID string) error {
 	return nil
 }
 
-func OpenChannel(db *bolt.DB, ev *wire.Envelope) error {
+func (a *Caller) OpenChannel(ev *wire.Envelope) error {
 	var err error
 
 	ch := &core.Channel{}
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = a.DB.Update(func(tx *bolt.Tx) error {
 		otx := &wire.OpeningTx{}
 		err = proto.Unmarshal(ev.Payload, otx)
 		if err != nil {
@@ -124,10 +131,10 @@ func OpenChannel(db *bolt.DB, ev *wire.Envelope) error {
 	return nil
 }
 
-func SendUpdateTx(db *bolt.DB, state []byte, chID string, fast bool) error {
+func (a *Caller) SendUpdateTx(state []byte, chID string, fast bool) error {
 	var err error
 	ch := &core.Channel{}
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = a.DB.Update(func(tx *bolt.Tx) error {
 		ch, err = access.GetChannel(tx, chID)
 		if err != nil {
 			return err
@@ -143,7 +150,7 @@ func SendUpdateTx(db *bolt.DB, state []byte, chID string, fast bool) error {
 			return errors.New("server error")
 		}
 
-		err = send(ev, ch.TheirAccount.Address)
+		err = a.Counterparty.Send(ev, ch.TheirAccount.Address)
 		if err != nil {
 			return err
 		}
@@ -162,9 +169,9 @@ func SendUpdateTx(db *bolt.DB, state []byte, chID string, fast bool) error {
 	return nil
 }
 
-func ConfirmUpdateTx(db *bolt.DB, chID string) error {
+func (a *Caller) ConfirmUpdateTx(chID string) error {
 	var err error
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = a.DB.Update(func(tx *bolt.Tx) error {
 		ch, err := access.GetChannel(tx, chID)
 		if err != nil {
 			return err
@@ -189,7 +196,7 @@ func ConfirmUpdateTx(db *bolt.DB, chID string) error {
 	return nil
 }
 
-func CheckFinalUpdateTx(db *bolt.DB, ev *wire.Envelope) error {
+func (a *Caller) CheckFinalUpdateTx(ev *wire.Envelope) error {
 	var err error
 	utx := &wire.UpdateTx{}
 	err = proto.Unmarshal(ev.Payload, utx)
@@ -197,7 +204,7 @@ func CheckFinalUpdateTx(db *bolt.DB, ev *wire.Envelope) error {
 		return err
 	}
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = a.DB.Update(func(tx *bolt.Tx) error {
 		ch, err := access.GetChannel(tx, utx.ChannelId)
 		if err != nil {
 			return err
@@ -208,7 +215,7 @@ func CheckFinalUpdateTx(db *bolt.DB, ev *wire.Envelope) error {
 			return err
 		}
 		if ev2 != nil {
-			err = send(ev2, ch.Judge.Address)
+			err = a.Judge.Send(ev2, ch.Judge.Address)
 			if err != nil {
 				return err
 			}

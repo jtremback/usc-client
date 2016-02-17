@@ -1,4 +1,4 @@
-package counterparty
+package logic
 
 import (
 	"errors"
@@ -10,7 +10,11 @@ import (
 	"github.com/jtremback/usc-core/wire"
 )
 
-func AddChannel(db *bolt.DB, ev *wire.Envelope) error {
+type Counterparty struct {
+	db *bolt.DB
+}
+
+func (a *Counterparty) AddChannel(ev *wire.Envelope) error {
 	var err error
 
 	otx := &wire.OpeningTx{}
@@ -21,7 +25,7 @@ func AddChannel(db *bolt.DB, ev *wire.Envelope) error {
 
 	ma := &core.MyAccount{}
 	ta := &core.TheirAccount{}
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = a.db.Update(func(tx *bolt.Tx) error {
 		_, err = access.GetChannel(tx, otx.ChannelId)
 		if err != nil {
 			return errors.New("channel already exists")
@@ -53,7 +57,7 @@ func AddChannel(db *bolt.DB, ev *wire.Envelope) error {
 	return nil
 }
 
-func AddUpdateTx(db *bolt.DB, ev *wire.Envelope) error {
+func (a *Counterparty) AddUpdateTx(ev *wire.Envelope) error {
 	var err error
 
 	utx := &wire.UpdateTx{}
@@ -62,7 +66,7 @@ func AddUpdateTx(db *bolt.DB, ev *wire.Envelope) error {
 		return err
 	}
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = a.db.Update(func(tx *bolt.Tx) error {
 		ch, err := access.GetChannel(tx, utx.ChannelId)
 		if err != nil {
 			return err

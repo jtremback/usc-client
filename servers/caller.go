@@ -1,44 +1,24 @@
-package caller
+package servers
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
 
-	"github.com/boltdb/bolt"
-	"github.com/golang/protobuf/proto"
-	"github.com/jtremback/usc-client/access"
-	core "github.com/jtremback/usc-core/client"
-	"github.com/jtremback/usc-core/wire"
+	"github.com/jtremback/usc-client/logic"
 )
 
-type Api struct {
-	db *bolt.DB
+type Caller struct {
+	Logic *logic.Caller
 }
 
-func (a *Api) MountRoutes(mux *http.ServeMux) {
+func (a *Caller) MountRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/propose_channel", a.proposeChannel)
+	mux.HandleFunc("/confirm_channel", a.confirmChannel)
 	mux.HandleFunc("/send_update_tx", a.sendUpdateTx)
+	mux.HandleFunc("/confirm_update_tx", a.confirmUpdateTx)
 }
 
-func send(ev *wire.Envelope, address string) error {
-	b, err := proto.Marshal(ev)
-
-	resp, err := http.Post(address, "application/octet-stream", bytes.NewReader(b))
-	if err != nil {
-		return errors.New("counterparty unresponsive")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return errors.New("counterparty error")
-	}
-
-	return nil
-}
-
-func (a *Api) proposeChannel(w http.ResponseWriter, r *http.Request) {
+func (a *Caller) proposeChannel(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		a.fail(w, "no body", 500)
 		return
@@ -55,13 +35,13 @@ func (a *Api) proposeChannel(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "body parsing error", 500)
 	}
 
-	err = ProposeChannel(a.db, req.State, req.MyAccountPubkey, req.TheirAccountPubkey, req.HoldPeriod)
+	err = a.Logic.ProposeChannel(req.State, req.MyAccountPubkey, req.TheirAccountPubkey, req.HoldPeriod)
 	if err != nil {
 		a.fail(w, err.Error(), 500)
 	}
 }
 
-func (a *Api) confirmChannel(w http.ResponseWriter, r *http.Request) {
+func (a *Caller) confirmChannel(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		a.fail(w, "no body", 500)
 		return
@@ -75,13 +55,13 @@ func (a *Api) confirmChannel(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "body parsing error", 500)
 	}
 
-	err = ConfirmChannel(a.db, req.ChannelId)
+	err = a.Logic.ConfirmChannel(req.ChannelId)
 	if err != nil {
 		a.fail(w, err.Error(), 500)
 	}
 }
 
-func (a *Api) sendUpdateTx(w http.ResponseWriter, r *http.Request) {
+func (a *Caller) sendUpdateTx(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		a.fail(w, "no body", 500)
 		return
@@ -97,13 +77,13 @@ func (a *Api) sendUpdateTx(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "body parsing error", 500)
 	}
 
-	err = SendUpdateTx(a.db, req.State, req.ChannelId, req.Fast)
+	err = a.Logic.SendUpdateTx(req.State, req.ChannelId, req.Fast)
 	if err != nil {
 		a.fail(w, err.Error(), 500)
 	}
 }
 
-func (a *Api) confirmUpdateTx(w http.ResponseWriter, r *http.Request) {
+func (a *Caller) confirmUpdateTx(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		a.fail(w, "no body", 500)
 		return
@@ -117,33 +97,13 @@ func (a *Api) confirmUpdateTx(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "body parsing error", 500)
 	}
 
-	err = ConfirmUpdateTx(a.db, req.ChannelId)
+	err = a.Logic.ConfirmUpdateTx(req.ChannelId)
 	if err != nil {
 		a.fail(w, err.Error(), 500)
 	}
 }
 
-func (a *Api) addJudge(w http.ResponseWriter, r *http.Request) {
-	if r.Body == nil {
-		a.fail(w, "no body", 500)
-		return
-	}
-
-	jd := &core.Judge{}
-	err := json.NewDecoder(r.Body).Decode(jd)
-	if err != nil {
-		panic(err)
-	}
-
-	a.db.Update(func(tx *bolt.Tx) error {
-		access.SetJudge(tx, jd)
-		return nil
-	})
-
-	a.send(w, "ok")
-}
-
-func (a *Api) fail(w http.ResponseWriter, msg string, status int) {
+func (a *Caller) fail(w http.ResponseWriter, msg string, status int) {
 	w.Header().Set("Content-Type", "application/json")
 
 	data := struct {
@@ -155,7 +115,7 @@ func (a *Api) fail(w http.ResponseWriter, msg string, status int) {
 	w.Write(resp)
 }
 
-func (a *Api) send(w http.ResponseWriter, data interface{}) {
+func (a *Caller) send(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 
 	resp, err := json.Marshal(data)
