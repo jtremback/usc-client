@@ -31,12 +31,12 @@ func (a *Counterparty) AddChannel(ev *wire.Envelope) error {
 			return errors.New("channel already exists")
 		}
 
-		ta, err = access.GetTheirAccount(tx, otx.Pubkeys[0])
+		ta, err = access.GetCounterparty(tx, otx.Pubkeys[0])
 		if err != nil {
 			return err
 		}
 
-		ma, err = access.GetMyAccount(tx, otx.Pubkeys[1])
+		ma, err = access.GetAccount(tx, otx.Pubkeys[1])
 		if err != nil {
 			return err
 		}

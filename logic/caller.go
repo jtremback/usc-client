@@ -22,12 +22,12 @@ func (a *Caller) ProposeChannel(state []byte, mpk []byte, tpk []byte, hold uint3
 	cpt := &core.Counterparty{}
 	acct := &core.Account{}
 	err = a.DB.Update(func(tx *bolt.Tx) error {
-		acct, err = access.GetMyAccount(tx, mpk)
+		acct, err = access.GetAccount(tx, mpk)
 		if err != nil {
 			return err
 		}
 
-		cpt, err = access.GetTheirAccount(tx, tpk)
+		cpt, err = access.GetCounterparty(tx, tpk)
 		if err != nil {
 			return err
 		}

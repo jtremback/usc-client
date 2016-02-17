@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
-	core "github.com/jtremback/usc-core/client"
+	core "github.com/jtremback/usc-core/peer"
 	"github.com/jtremback/usc-core/wire"
 )
 
@@ -79,7 +79,7 @@ func TestSetMyAccount(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := SetMyAccount(tx, acct)
+		err := SetAccount(tx, acct)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -88,7 +88,7 @@ func TestSetMyAccount(t *testing.T) {
 
 	db.View(func(tx *bolt.Tx) error {
 		acct2 := &core.Account{}
-		json.Unmarshal(tx.Bucket([]byte("MyAccounts")).Get(acct.Pubkey), acct2)
+		json.Unmarshal(tx.Bucket([]byte("Accounts")).Get(acct.Pubkey), acct2)
 		if !reflect.DeepEqual(acct, acct2) {
 			t.Fatal("MyAccount incorrect")
 		}
@@ -135,7 +135,7 @@ func TestPopulateMyAccount(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := SetMyAccount(tx, acct)
+		err := SetAccount(tx, acct)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -149,7 +149,7 @@ func TestPopulateMyAccount(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		err := PopulateMyAccount(tx, acct)
+		err := PopulateAccount(tx, acct)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -185,7 +185,7 @@ func TestSetTheirAccount(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := SetTheirAccount(tx, cpt)
+		err := SetCounterparty(tx, cpt)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -194,7 +194,7 @@ func TestSetTheirAccount(t *testing.T) {
 
 	db.View(func(tx *bolt.Tx) error {
 		cpt2 := &core.Counterparty{}
-		json.Unmarshal(tx.Bucket([]byte("TheirAccounts")).Get(cpt.Pubkey), cpt2)
+		json.Unmarshal(tx.Bucket([]byte("Counterparties")).Get(cpt.Pubkey), cpt2)
 		if !reflect.DeepEqual(cpt, cpt2) {
 			t.Fatal("TheirAccount incorrect")
 		}
@@ -240,7 +240,7 @@ func TestPopulateTheirAccount(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := SetTheirAccount(tx, cpt)
+		err := SetCounterparty(tx, cpt)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -254,7 +254,7 @@ func TestPopulateTheirAccount(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		err := PopulateTheirAccount(tx, cpt)
+		err := PopulateCounterparty(tx, cpt)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -346,7 +346,7 @@ func TestSetChannel(t *testing.T) {
 			t.Fatal("Judge incorrect")
 		}
 
-		maJson := tx.Bucket([]byte("MyAccounts")).Get(ch.Account.Pubkey)
+		maJson := tx.Bucket([]byte("Accounts")).Get(ch.Account.Pubkey)
 		acct := &core.Account{}
 		json.Unmarshal(maJson, acct)
 
@@ -354,7 +354,7 @@ func TestSetChannel(t *testing.T) {
 			t.Fatal("MyAccount incorrect")
 		}
 
-		taJson := tx.Bucket([]byte("TheirAccounts")).Get(ch.Counterparty.Pubkey)
+		taJson := tx.Bucket([]byte("Counterparties")).Get(ch.Counterparty.Pubkey)
 		cpt := &core.Counterparty{}
 		json.Unmarshal(taJson, cpt)
 
@@ -457,7 +457,7 @@ func TestPopulateChannel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = SetMyAccount(tx, acct)
+		err = SetAccount(tx, acct)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -467,7 +467,7 @@ func TestPopulateChannel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = SetTheirAccount(tx, cpt)
+		err = SetCounterparty(tx, cpt)
 		if err != nil {
 			t.Fatal(err)
 		}

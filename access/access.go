@@ -22,8 +22,8 @@ func MakeBuckets(db *bolt.DB) error {
 		_, err := tx.CreateBucketIfNotExists([]byte("Indexes"))
 		_, err = tx.CreateBucketIfNotExists([]byte("Channels"))
 		_, err = tx.CreateBucketIfNotExists([]byte("Judges"))
-		_, err = tx.CreateBucketIfNotExists([]byte("MyAccounts"))
-		_, err = tx.CreateBucketIfNotExists([]byte("TheirAccounts"))
+		_, err = tx.CreateBucketIfNotExists([]byte("Accounts"))
+		_, err = tx.CreateBucketIfNotExists([]byte("Counterparties"))
 		if err != nil {
 			return err
 		}
@@ -49,13 +49,13 @@ func SetJudge(tx *bolt.Tx, jd *core.Judge) error {
 	return nil
 }
 
-func SetMyAccount(tx *bolt.Tx, acct *core.Account) error {
+func SetAccount(tx *bolt.Tx, acct *core.Account) error {
 	b, err := json.Marshal(acct)
 	if err != nil {
 		return err
 	}
 
-	err = tx.Bucket([]byte("MyAccounts")).Put([]byte(acct.Pubkey), b)
+	err = tx.Bucket([]byte("Accounts")).Put([]byte(acct.Pubkey), b)
 	if err != nil {
 		return err
 	}
@@ -75,23 +75,23 @@ func SetMyAccount(tx *bolt.Tx, acct *core.Account) error {
 	return nil
 }
 
-func GetMyAccount(tx *bolt.Tx, key []byte) (*core.Account, error) {
+func GetAccount(tx *bolt.Tx, key []byte) (*core.Account, error) {
 	acct := &core.Account{}
-	err := json.Unmarshal(tx.Bucket([]byte("MyAccounts")).Get(key), acct)
+	err := json.Unmarshal(tx.Bucket([]byte("Accounts")).Get(key), acct)
 	if err != nil {
 		return nil, errors.New("database error")
 	}
 	if acct == nil {
 		return nil, errors.New("account not found")
 	}
-	err = PopulateMyAccount(tx, acct)
+	err = PopulateAccount(tx, acct)
 	if err != nil {
 		return nil, errors.New("database error")
 	}
 	return acct, nil
 }
 
-func PopulateMyAccount(tx *bolt.Tx, acct *core.Account) error {
+func PopulateAccount(tx *bolt.Tx, acct *core.Account) error {
 	jd := &core.Judge{}
 	err := json.Unmarshal(tx.Bucket([]byte("Judges")).Get([]byte(acct.Judge.Pubkey)), jd)
 	if err != nil {
@@ -102,13 +102,13 @@ func PopulateMyAccount(tx *bolt.Tx, acct *core.Account) error {
 	return nil
 }
 
-func SetTheirAccount(tx *bolt.Tx, cpt *core.Counterparty) error {
+func SetCounterparty(tx *bolt.Tx, cpt *core.Counterparty) error {
 	b, err := json.Marshal(cpt)
 	if err != nil {
 		return err
 	}
 
-	err = tx.Bucket([]byte("TheirAccounts")).Put([]byte(cpt.Pubkey), b)
+	err = tx.Bucket([]byte("Counterparties")).Put([]byte(cpt.Pubkey), b)
 	if err != nil {
 		return err
 	}
@@ -128,23 +128,23 @@ func SetTheirAccount(tx *bolt.Tx, cpt *core.Counterparty) error {
 	return nil
 }
 
-func GetTheirAccount(tx *bolt.Tx, key []byte) (*core.Counterparty, error) {
+func GetCounterparty(tx *bolt.Tx, key []byte) (*core.Counterparty, error) {
 	cpt := &core.Counterparty{}
-	err := json.Unmarshal(tx.Bucket([]byte("TheirAccounts")).Get(key), cpt)
+	err := json.Unmarshal(tx.Bucket([]byte("Counterparties")).Get(key), cpt)
 	if err != nil {
 		return nil, errors.New("database error")
 	}
 	if cpt == nil {
 		return nil, errors.New("account not found")
 	}
-	err = PopulateTheirAccount(tx, cpt)
+	err = PopulateCounterparty(tx, cpt)
 	if err != nil {
 		return nil, errors.New("database error")
 	}
 	return cpt, nil
 }
 
-func PopulateTheirAccount(tx *bolt.Tx, cpt *core.Counterparty) error {
+func PopulateCounterparty(tx *bolt.Tx, cpt *core.Counterparty) error {
 	jd := &core.Judge{}
 	err := json.Unmarshal(tx.Bucket([]byte("Judges")).Get([]byte(cpt.Judge.Pubkey)), jd)
 	if err != nil {
@@ -184,7 +184,7 @@ func SetChannel(tx *bolt.Tx, ch *core.Channel) error {
 		return err
 	}
 
-	tx.Bucket([]byte("MyAccounts")).Put(ch.Account.Pubkey, b)
+	tx.Bucket([]byte("Accounts")).Put(ch.Account.Pubkey, b)
 
 	// Their Account
 
@@ -193,7 +193,7 @@ func SetChannel(tx *bolt.Tx, ch *core.Channel) error {
 		return err
 	}
 
-	tx.Bucket([]byte("TheirAccounts")).Put(ch.Counterparty.Pubkey, b)
+	tx.Bucket([]byte("Counterparties")).Put(ch.Counterparty.Pubkey, b)
 
 	// Indexes
 
@@ -272,21 +272,21 @@ func GetProposedUpdateTxs(tx *bolt.Tx) ([]*core.Channel, error) {
 
 func PopulateChannel(tx *bolt.Tx, ch *core.Channel) error {
 	acct := &core.Account{}
-	err := json.Unmarshal(tx.Bucket([]byte("MyAccounts")).Get([]byte(ch.Account.Pubkey)), acct)
+	err := json.Unmarshal(tx.Bucket([]byte("Accounts")).Get([]byte(ch.Account.Pubkey)), acct)
 	if err != nil {
 		return err
 	}
-	err = PopulateMyAccount(tx, acct)
+	err = PopulateAccount(tx, acct)
 	if err != nil {
 		return err
 	}
 
 	cpt := &core.Counterparty{}
-	err = json.Unmarshal(tx.Bucket([]byte("TheirAccounts")).Get([]byte(ch.Counterparty.Pubkey)), cpt)
+	err = json.Unmarshal(tx.Bucket([]byte("Counterparties")).Get([]byte(ch.Counterparty.Pubkey)), cpt)
 	if err != nil {
 		return err
 	}
-	err = PopulateTheirAccount(tx, cpt)
+	err = PopulateCounterparty(tx, cpt)
 	if err != nil {
 		return err
 	}
