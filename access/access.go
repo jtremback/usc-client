@@ -49,6 +49,19 @@ func SetJudge(tx *bolt.Tx, jd *core.Judge) error {
 	return nil
 }
 
+func GetJudge(tx *bolt.Tx, key []byte) (*core.Judge, error) {
+	jd := &core.Judge{}
+	err := json.Unmarshal(tx.Bucket([]byte("Accounts")).Get(key), jd)
+	if err != nil {
+		return nil, errors.New("database error")
+	}
+	if jd == nil {
+		return nil, errors.New("judge not found")
+	}
+
+	return jd, nil
+}
+
 func SetAccount(tx *bolt.Tx, acct *core.Account) error {
 	b, err := json.Marshal(acct)
 	if err != nil {
