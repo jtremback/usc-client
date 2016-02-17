@@ -23,8 +23,8 @@ func (a *Counterparty) AddChannel(ev *wire.Envelope) error {
 		return err
 	}
 
-	ma := &core.MyAccount{}
-	ta := &core.TheirAccount{}
+	ma := &core.Account{}
+	ta := &core.Counterparty{}
 	err = a.db.Update(func(tx *bolt.Tx) error {
 		_, err = access.GetChannel(tx, otx.ChannelId)
 		if err != nil {

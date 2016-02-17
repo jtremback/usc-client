@@ -21,9 +21,9 @@ func main() {
 	judgeCl := &clients.Judge{}
 
 	callerLog := &logic.Caller{
-		DB:           db,
-		Counterparty: counterpartyCl,
-		Judge:        judgeCl,
+		DB:             db,
+		CounterpartyCl: counterpartyCl,
+		JudgeCl:        judgeCl,
 	}
 
 	callerMux := http.NewServeMux()

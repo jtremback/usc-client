@@ -12,42 +12,42 @@ import (
 )
 
 type Caller struct {
-	DB           *bolt.DB
-	Counterparty *clients.Counterparty
-	Judge        *clients.Judge
+	DB             *bolt.DB
+	CounterpartyCl *clients.Counterparty
+	JudgeCl        *clients.Judge
 }
 
 func (a *Caller) ProposeChannel(state []byte, mpk []byte, tpk []byte, hold uint32) error {
 	var err error
-	ta := &core.TheirAccount{}
-	ma := &core.MyAccount{}
+	cpt := &core.Counterparty{}
+	acct := &core.Account{}
 	err = a.DB.Update(func(tx *bolt.Tx) error {
-		ma, err = access.GetMyAccount(tx, mpk)
+		acct, err = access.GetMyAccount(tx, mpk)
 		if err != nil {
 			return err
 		}
 
-		ta, err = access.GetTheirAccount(tx, tpk)
+		cpt, err = access.GetTheirAccount(tx, tpk)
 		if err != nil {
 			return err
 		}
 
-		otx, err := ma.NewOpeningTx(ta, state, hold)
+		otx, err := acct.NewOpeningTx(cpt, state, hold)
 		if err != nil {
 			return errors.New("server error")
 		}
 
-		ev, err := ma.SignOpeningTx(otx)
+		ev, err := acct.SignOpeningTx(otx)
 		if err != nil {
 			return errors.New("server error")
 		}
 
-		ch, err := core.NewChannel(ev, ma, ta)
+		ch, err := core.NewChannel(ev, acct, cpt)
 		if err != nil {
 			return errors.New("server error")
 		}
 
-		err = a.Counterparty.Send(ev, ta.Address)
+		err = a.CounterpartyCl.Send(ev, cpt.Address)
 		if err != nil {
 			return err
 		}
@@ -75,7 +75,7 @@ func (a *Caller) ConfirmChannel(chID string) error {
 			return err
 		}
 
-		ch.OpeningTxEnvelope = ch.MyAccount.SignEnvelope(ch.OpeningTxEnvelope)
+		ch.OpeningTxEnvelope = ch.Account.SignEnvelope(ch.OpeningTxEnvelope)
 
 		access.SetChannel(tx, ch)
 		if err != nil {
@@ -88,7 +88,7 @@ func (a *Caller) ConfirmChannel(chID string) error {
 		return err
 	}
 
-	err = a.Judge.Send(ch.OpeningTxEnvelope, ch.Judge.Address)
+	err = a.JudgeCl.Send(ch.OpeningTxEnvelope, ch.Judge.Address)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (a *Caller) SendUpdateTx(state []byte, chID string, fast bool) error {
 			return errors.New("server error")
 		}
 
-		err = a.Counterparty.Send(ev, ch.TheirAccount.Address)
+		err = a.CounterpartyCl.Send(ev, ch.Counterparty.Address)
 		if err != nil {
 			return err
 		}
@@ -215,7 +215,7 @@ func (a *Caller) CheckFinalUpdateTx(ev *wire.Envelope) error {
 			return err
 		}
 		if ev2 != nil {
-			err = a.Judge.Send(ev2, ch.Judge.Address)
+			err = a.JudgeCl.Send(ev2, ch.Judge.Address)
 			if err != nil {
 				return err
 			}
@@ -234,3 +234,9 @@ func (a *Caller) CheckFinalUpdateTx(ev *wire.Envelope) error {
 
 	return nil
 }
+
+func (a *Caller) AddJudge() {}
+
+func (a *Caller) NewAccount() {}
+
+func (a *Caller) AddCounterparty() {}

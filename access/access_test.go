@@ -25,7 +25,7 @@ func TestSetJudge(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ju := &core.Judge{
+	jd := &core.Judge{
 		Name:    "joe",
 		Pubkey:  []byte{40, 40, 40},
 		Address: "stoops.com:3004",
@@ -33,7 +33,7 @@ func TestSetJudge(t *testing.T) {
 	ju2 := &core.Judge{}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := SetJudge(tx, ju)
+		err := SetJudge(tx, jd)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -41,15 +41,15 @@ func TestSetJudge(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		fmt.Println(string(tx.Bucket([]byte("Judges")).Get(ju.Pubkey)))
-		err := json.Unmarshal(tx.Bucket([]byte("Judges")).Get(ju.Pubkey), ju2)
+		fmt.Println(string(tx.Bucket([]byte("Judges")).Get(jd.Pubkey)))
+		err := json.Unmarshal(tx.Bucket([]byte("Judges")).Get(jd.Pubkey), ju2)
 		if err != nil {
 			t.Fatal(err)
 		}
 		return nil
 	})
 
-	if !reflect.DeepEqual(ju, ju2) {
+	if !reflect.DeepEqual(jd, ju2) {
 		t.Fatal("structs not equal :(")
 	}
 }
@@ -67,7 +67,7 @@ func TestSetMyAccount(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ma := &core.MyAccount{
+	acct := &core.Account{
 		Name:    "boogie",
 		Privkey: []byte{30, 30, 30},
 		Pubkey:  []byte{40, 40, 40},
@@ -79,7 +79,7 @@ func TestSetMyAccount(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := SetMyAccount(tx, ma)
+		err := SetMyAccount(tx, acct)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -87,18 +87,18 @@ func TestSetMyAccount(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		ma2 := &core.MyAccount{}
-		json.Unmarshal(tx.Bucket([]byte("MyAccounts")).Get(ma.Pubkey), ma2)
-		if !reflect.DeepEqual(ma, ma2) {
+		acct2 := &core.Account{}
+		json.Unmarshal(tx.Bucket([]byte("MyAccounts")).Get(acct.Pubkey), acct2)
+		if !reflect.DeepEqual(acct, acct2) {
 			t.Fatal("MyAccount incorrect")
 		}
 
-		fromDB := tx.Bucket([]byte("Judges")).Get(ma.Judge.Pubkey)
-		ju := &core.Judge{}
-		json.Unmarshal(fromDB, ju)
+		fromDB := tx.Bucket([]byte("Judges")).Get(acct.Judge.Pubkey)
+		jd := &core.Judge{}
+		json.Unmarshal(fromDB, jd)
 
-		if !reflect.DeepEqual(ma.Judge, ju) {
-			t.Fatal("Judge incorrect", ma.Judge, ju, string(tx.Bucket([]byte("Judges")).Get(ma.Judge.Pubkey)))
+		if !reflect.DeepEqual(acct.Judge, jd) {
+			t.Fatal("Judge incorrect", acct.Judge, jd, string(tx.Bucket([]byte("Judges")).Get(acct.Judge.Pubkey)))
 		}
 		return nil
 	})
@@ -117,7 +117,7 @@ func TestPopulateMyAccount(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ma := &core.MyAccount{
+	acct := &core.Account{
 		Name:    "boogie",
 		Privkey: []byte{30, 30, 30},
 		Pubkey:  []byte{40, 40, 40},
@@ -128,19 +128,19 @@ func TestPopulateMyAccount(t *testing.T) {
 		},
 	}
 
-	ju := &core.Judge{
+	jd := &core.Judge{
 		Name:    "joe",
 		Pubkey:  []byte{40, 40, 40},
 		Address: "stoops.com:3004",
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := SetMyAccount(tx, ma)
+		err := SetMyAccount(tx, acct)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = SetJudge(tx, ju)
+		err = SetJudge(tx, jd)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -149,13 +149,13 @@ func TestPopulateMyAccount(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		err := PopulateMyAccount(tx, ma)
+		err := PopulateMyAccount(tx, acct)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(ma.Judge, ju) {
-			t.Fatal("Judge incorrect", ma.Judge, ju)
+		if !reflect.DeepEqual(acct.Judge, jd) {
+			t.Fatal("Judge incorrect", acct.Judge, jd)
 		}
 		return nil
 	})
@@ -174,7 +174,7 @@ func TestSetTheirAccount(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ta := &core.TheirAccount{
+	cpt := &core.Counterparty{
 		Name:   "boogie",
 		Pubkey: []byte{40, 40, 40},
 		Judge: &core.Judge{
@@ -185,7 +185,7 @@ func TestSetTheirAccount(t *testing.T) {
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := SetTheirAccount(tx, ta)
+		err := SetTheirAccount(tx, cpt)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -193,18 +193,18 @@ func TestSetTheirAccount(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		ta2 := &core.TheirAccount{}
-		json.Unmarshal(tx.Bucket([]byte("TheirAccounts")).Get(ta.Pubkey), ta2)
-		if !reflect.DeepEqual(ta, ta2) {
+		cpt2 := &core.Counterparty{}
+		json.Unmarshal(tx.Bucket([]byte("TheirAccounts")).Get(cpt.Pubkey), cpt2)
+		if !reflect.DeepEqual(cpt, cpt2) {
 			t.Fatal("TheirAccount incorrect")
 		}
 
-		fromDB := tx.Bucket([]byte("Judges")).Get(ta.Judge.Pubkey)
-		ju := &core.Judge{}
-		json.Unmarshal(fromDB, ju)
+		fromDB := tx.Bucket([]byte("Judges")).Get(cpt.Judge.Pubkey)
+		jd := &core.Judge{}
+		json.Unmarshal(fromDB, jd)
 
-		if !reflect.DeepEqual(ta.Judge, ju) {
-			t.Fatal("Judge incorrect", ta.Judge, ju, string(tx.Bucket([]byte("Judges")).Get(ta.Judge.Pubkey)))
+		if !reflect.DeepEqual(cpt.Judge, jd) {
+			t.Fatal("Judge incorrect", cpt.Judge, jd, string(tx.Bucket([]byte("Judges")).Get(cpt.Judge.Pubkey)))
 		}
 		return nil
 	})
@@ -223,7 +223,7 @@ func TestPopulateTheirAccount(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ta := &core.TheirAccount{
+	cpt := &core.Counterparty{
 		Name:   "boogie",
 		Pubkey: []byte{40, 40, 40},
 		Judge: &core.Judge{
@@ -233,19 +233,19 @@ func TestPopulateTheirAccount(t *testing.T) {
 		},
 	}
 
-	ju := &core.Judge{
+	jd := &core.Judge{
 		Name:    "joe",
 		Pubkey:  []byte{40, 40, 40},
 		Address: "stoops.com:3004",
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
-		err := SetTheirAccount(tx, ta)
+		err := SetTheirAccount(tx, cpt)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = SetJudge(tx, ju)
+		err = SetJudge(tx, jd)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -254,13 +254,13 @@ func TestPopulateTheirAccount(t *testing.T) {
 	})
 
 	db.View(func(tx *bolt.Tx) error {
-		err := PopulateTheirAccount(tx, ta)
+		err := PopulateTheirAccount(tx, cpt)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(ta.Judge, ju) {
-			t.Fatal("Judge incorrect", ta.Judge, ju)
+		if !reflect.DeepEqual(cpt.Judge, jd) {
+			t.Fatal("Judge incorrect", cpt.Judge, jd)
 		}
 		return nil
 	})
@@ -301,7 +301,7 @@ func TestSetChannel(t *testing.T) {
 			Address: "stoops.com:3004",
 		},
 
-		MyAccount: &core.MyAccount{
+		Account: &core.Account{
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Privkey: []byte{40, 40, 40},
@@ -312,7 +312,7 @@ func TestSetChannel(t *testing.T) {
 			},
 		},
 
-		TheirAccount: &core.TheirAccount{
+		Counterparty: &core.Counterparty{
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
@@ -339,26 +339,26 @@ func TestSetChannel(t *testing.T) {
 			t.Fatal("Channel incorrect")
 		}
 		juJson := tx.Bucket([]byte("Judges")).Get(ch.Judge.Pubkey)
-		ju := &core.Judge{}
-		json.Unmarshal(juJson, ju)
+		jd := &core.Judge{}
+		json.Unmarshal(juJson, jd)
 
-		if !reflect.DeepEqual(ch.Judge, ju) {
+		if !reflect.DeepEqual(ch.Judge, jd) {
 			t.Fatal("Judge incorrect")
 		}
 
-		maJson := tx.Bucket([]byte("MyAccounts")).Get(ch.MyAccount.Pubkey)
-		ma := &core.MyAccount{}
-		json.Unmarshal(maJson, ma)
+		maJson := tx.Bucket([]byte("MyAccounts")).Get(ch.Account.Pubkey)
+		acct := &core.Account{}
+		json.Unmarshal(maJson, acct)
 
-		if !reflect.DeepEqual(ch.MyAccount, ma) {
+		if !reflect.DeepEqual(ch.Account, acct) {
 			t.Fatal("MyAccount incorrect")
 		}
 
-		taJson := tx.Bucket([]byte("TheirAccounts")).Get(ch.TheirAccount.Pubkey)
-		ta := &core.TheirAccount{}
-		json.Unmarshal(taJson, ta)
+		taJson := tx.Bucket([]byte("TheirAccounts")).Get(ch.Counterparty.Pubkey)
+		cpt := &core.Counterparty{}
+		json.Unmarshal(taJson, cpt)
 
-		if !reflect.DeepEqual(ch.TheirAccount, ta) {
+		if !reflect.DeepEqual(ch.Counterparty, cpt) {
 			t.Fatal("TheirAccount incorrect")
 		}
 		return nil
@@ -400,7 +400,7 @@ func TestPopulateChannel(t *testing.T) {
 			Address: "stoops.com:3004",
 		},
 
-		MyAccount: &core.MyAccount{
+		Account: &core.Account{
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Privkey: []byte{40, 40, 40},
@@ -411,7 +411,7 @@ func TestPopulateChannel(t *testing.T) {
 			},
 		},
 
-		TheirAccount: &core.TheirAccount{
+		Counterparty: &core.Counterparty{
 			Name:    "wrong",
 			Pubkey:  []byte{40, 40, 40},
 			Address: "stoops.com:3004",
@@ -423,13 +423,13 @@ func TestPopulateChannel(t *testing.T) {
 		},
 	}
 
-	ju := &core.Judge{
+	jd := &core.Judge{
 		Name:    "joe",
 		Pubkey:  []byte{40, 40, 40},
 		Address: "stoops.com:3004",
 	}
 
-	ma := &core.MyAccount{
+	acct := &core.Account{
 		Name:    "crow",
 		Pubkey:  []byte{40, 40, 40},
 		Privkey: []byte{40, 40, 40},
@@ -440,7 +440,7 @@ func TestPopulateChannel(t *testing.T) {
 		},
 	}
 
-	ta := &core.TheirAccount{
+	cpt := &core.Counterparty{
 		Name:    "flerb",
 		Pubkey:  []byte{40, 40, 40},
 		Address: "stoops.com:3004",
@@ -457,17 +457,17 @@ func TestPopulateChannel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = SetMyAccount(tx, ma)
+		err = SetMyAccount(tx, acct)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = SetJudge(tx, ju)
+		err = SetJudge(tx, jd)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = SetTheirAccount(tx, ta)
+		err = SetTheirAccount(tx, cpt)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -481,16 +481,16 @@ func TestPopulateChannel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(ch.Judge, ju) {
-			t.Fatal("Judge incorrect", ch.Judge, ju)
+		if !reflect.DeepEqual(ch.Judge, jd) {
+			t.Fatal("Judge incorrect", ch.Judge, jd)
 		}
 
-		if !reflect.DeepEqual(ch.MyAccount, ma) {
-			t.Fatal("MyAccount incorrect", ch.MyAccount, ma)
+		if !reflect.DeepEqual(ch.Account, acct) {
+			t.Fatal("MyAccount incorrect", ch.Account, acct)
 		}
 
-		if !reflect.DeepEqual(ch.TheirAccount, ta) {
-			t.Fatal("TheirAccount incorrect", ch.TheirAccount, ta)
+		if !reflect.DeepEqual(ch.Counterparty, cpt) {
+			t.Fatal("TheirAccount incorrect", ch.Counterparty, cpt)
 		}
 
 		return nil
