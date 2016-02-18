@@ -5,10 +5,10 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/golang/protobuf/proto"
-	"github.com/jtremback/usc-client/access"
-	"github.com/jtremback/usc-client/clients"
 	core "github.com/jtremback/usc-core/peer"
 	"github.com/jtremback/usc-core/wire"
+	"github.com/jtremback/usc-peer/access"
+	"github.com/jtremback/usc-peer/clients"
 )
 
 type Caller struct {

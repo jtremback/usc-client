@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
-	"github.com/jtremback/usc-client/access"
+	"github.com/jtremback/usc-peer/access"
 )
 
 func TestAddJudge(t *testing.T) {
