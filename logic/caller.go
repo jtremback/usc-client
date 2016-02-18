@@ -42,7 +42,7 @@ func (a *Caller) ProposeChannel(state []byte, mpk []byte, tpk []byte, hold uint3
 			return errors.New("server error")
 		}
 
-		ch, err := core.NewChannel(ev, acct, cpt)
+		ch, err := core.NewChannel(ev, otx, acct, cpt)
 		if err != nil {
 			return errors.New("server error")
 		}
@@ -235,8 +235,14 @@ func (a *Caller) CheckFinalUpdateTx(ev *wire.Envelope) error {
 	return nil
 }
 
-func (a *Caller) AddJudge() {}
+func (a *Caller) AddJudge() {
 
-func (a *Caller) NewAccount() {}
+}
 
-func (a *Caller) AddCounterparty() {}
+func (a *Caller) NewAccount() {
+
+}
+
+func (a *Caller) AddCounterparty() {
+
+}
