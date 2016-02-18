@@ -10,7 +10,7 @@ caller/get_proposed_channels - When a user decides to check for proposed channel
 
 caller/confirm_channel - When a user decides to confirm a proposed channel, they send a message to usc, which signs the OpeningTx, saves the channel with the new opening tx envelope, and sends it to the judge.
 
-When the judge receives the opening tx, they verify the signatures and check that there is not already a channel with that ID. They then save the channel.
+When the judge receives the opening tx, they verify the signatures and the judges and check that there is not already a channel with that ID. They then save the channel.
 
 When a judge decides to check for proposed channels, they look up all channels with a phase of PENDING_OPEN.
 
@@ -33,6 +33,17 @@ caller/confirm_update_tx - When a user wants to approve an update tx, she sends 
 ## Closing
 
 caller/close_channel - A user closes a channel by sending the LastFullUpdateTx to the judge.
+
+when the judge receives the lastFullUpdateTx it checks it and puts the channel into pending close. it saves the time with the channel
+
+when the judge receives a lastFullUpdateTx when the channel is in pending close, it checks to make sure that the sequence number is higher. if the sequence number is higher, it replaces the lastFullUpdateTx on file. the hold period is not reset.
+
+When one of the participants would like to submit a fulfillment, they sign it and send it to the judge.
+
+The judge checks that the signature is valid, and the hold period is still open and stores it with the channel.
+
+when the hold period runs out, the judge puts the channel into closed phase. process external to usc then checks the fulfilments etc.
+
 
 caller/check_final_update_tx - If a judge posts an updateTx and enters the hold period, the user checks to make sure that its LastFullUpdateTx is not higher than the update tx that the judge has, and places the channel into PENDING_CLOSED if it isnt already. If the LastFullUpdateTx is higher, it sends that to the judge.
 
